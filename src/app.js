@@ -24,7 +24,7 @@
  */
 const CONFIG = {
   model:              'claude-haiku-4-5-20251001',
-  maxTokens:          2200,
+  maxTokens:          4000,
   apiEndpoint:        '/api/history',
   hookCycleInterval:  5000,   // ms between landing hook rotations
   loadingMsgInterval: 2800,   // ms between loading status messages
@@ -567,18 +567,15 @@ HARD CONSTRAINTS:
     const apiData = await response.json();
     const rawContent = apiData.content.map(block => block.text || '').join('');
     
-    const startIdx = rawContent.indexOf('{');
-    const endIdx = rawContent.lastIndexOf('}');
-    
-    if (startIdx === -1 || endIdx === -1) {
-      throw new Error('parse: No JSON object found in response');
+    const match = rawContent.match(/\{[\s\S]*\}/);
+    if (!match) {
+      throw new Error('parse: No JSON object found');
     }
 
     try {
-      const jsonStr = rawContent.substring(startIdx, endIdx + 1);
-      return JSON.parse(jsonStr);
+      return JSON.parse(match[0]);
     } catch (e) {
-      throw new Error('parse: formatting error in API response');
+      throw new Error('parse: invalid JSON structure');
     }
   } catch (err) {
     clearTimeout(timeoutId);
