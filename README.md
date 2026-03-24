@@ -4,6 +4,8 @@
 
 Enter a year. See what was happening simultaneously across Europe, Asia, the Americas, Africa, and Oceania — not as a list of facts, but as a structured comparative analysis.
 
+**Live Demo:** [historylens-psi.vercel.app](https://historylens-psi.vercel.app)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-c9a84c.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-1.0.0-16a085.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
