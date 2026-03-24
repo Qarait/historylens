@@ -565,13 +565,20 @@ HARD CONSTRAINTS:
     }
 
     const apiData = await response.json();
-    const rawText = apiData.content.map(block => block.text || '').join('');
-    const cleaned = rawText.replace(/```json|```/gi, '').trim();
+    const rawContent = apiData.content.map(block => block.text || '').join('');
+    
+    const startIdx = rawContent.indexOf('{');
+    const endIdx = rawContent.lastIndexOf('}');
+    
+    if (startIdx === -1 || endIdx === -1) {
+      throw new Error('parse: No JSON object found in response');
+    }
 
     try {
-      return JSON.parse(cleaned);
-    } catch {
-      throw new Error(`parse: could not parse API response`);
+      const jsonStr = rawContent.substring(startIdx, endIdx + 1);
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      throw new Error('parse: formatting error in API response');
     }
   } catch (err) {
     clearTimeout(timeoutId);
