@@ -1,0 +1,35 @@
+{
+  "name": "historylens",
+  "version": "1.0.0",
+  "description": "Comparative world history explorer — understand what the world looked like in any year",
+  "homepage": "https://historylens.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Qarait/historylens"
+  },
+  "license": "MIT",
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "serve:node": "npx serve .",
+    "lint:js": "npx eslint src/app.js",
+    "validate:html": "npx html-validate index.html"
+  },
+  "keywords": [
+    "history",
+    "education",
+    "comparative-history",
+    "world-history",
+    "classroom",
+    "edtech",
+    "anthropic",
+    "ai"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "html-validate": "^8.0.0",
+    "serve": "^14.0.0"
+  }
+}
