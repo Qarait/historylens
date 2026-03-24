@@ -11,6 +11,7 @@ export default async function handler(req, res) {
 
   // 2. Read API key from environment
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log('KEY_CHECK:', apiKey ? 'present, length=' + apiKey.length : 'MISSING');
   if (!apiKey) {
     return res.status(500).json({ error: 'Anthropic API key not configured on server' });
   }
