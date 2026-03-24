@@ -23,7 +23,7 @@
  * exposed in client-side code. See README.md for details.
  */
 const CONFIG = {
-  model:              'claude-3-5-haiku-20241022',
+  model:              'claude-haiku-4-5-20251001',
   maxTokens:          2200,
   apiEndpoint:        '/api/history',
   hookCycleInterval:  5000,   // ms between landing hook rotations
