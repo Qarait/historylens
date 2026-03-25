@@ -21,7 +21,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid request: Missing messages' });
   }
 
-  // Validate combined prompt length to prevent proxy abuse
+  // RULE: Before changing this limit, measure the real prompt in src/app.js first.
+  // The historian prompt template (fetchHistory in app.js) is ~3,480 chars of
+  // static text + a short year label (~8 chars). Total per request: ~3,490 chars.
+  // Do NOT set a limit below 10,000 without re-measuring after any prompt change.
+  // History: original limit of 5,000 blocked all requests (bug fixed in v1.0.2).
   const promptText = messages.map(m => m.content || '').join('');
   if (promptText.length < 100 || promptText.length > 50000) {
     return res.status(400).json({ error: 'Invalid request' });
