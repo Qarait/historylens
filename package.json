@@ -1,6 +1,7 @@
 {
   "name": "historylens",
   "version": "1.0.0",
+  "type": "module",
   "description": "Comparative world history explorer — understand what the world looked like in any year",
   "homepage": "https://historylens.app",
   "repository": {
@@ -9,9 +10,10 @@
   },
   "license": "MIT",
   "scripts": {
-    "serve": "python3 -m http.server 8000",
-    "serve:node": "npx serve .",
-    "lint:js": "npx eslint src/app.js",
+    "test":          "node --test tests/api.test.js",
+    "serve":         "python3 -m http.server 8000",
+    "serve:node":    "npx serve .",
+    "lint:js":       "npx eslint src/app.js",
     "validate:html": "npx html-validate index.html"
   },
   "keywords": [
