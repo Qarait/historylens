@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   // Validate combined prompt length to prevent proxy abuse
   const promptText = messages.map(m => m.content || '').join('');
-  if (promptText.length < 100 || promptText.length > 5000) {
+  if (promptText.length < 100 || promptText.length > 50000) {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
