@@ -9,9 +9,10 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 ## [1.0.3] — 2026-03-25
 
 ### Changed
-- `CONFIG.maxTokens` reduced from 4000 to 1800 to improve
-  response latency. Responses consistently stay under
-  1800 tokens.
+- `CONFIG.maxTokens` reduced from 4000 → 1800 (v1.0.3), then corrected
+  to 2200 after 1800 caused schema truncation errors. The 5-region JSON
+  schema (5 regions × 3 events + signals + cross-region + hook) requires
+  at least 2200 tokens. **2200 is the confirmed minimum. Do not go below.**
 - Added `anthropic-beta: prompt-caching-2024-07-31` header to reduce
   latency on repeated requests.
 - Moved `anthropicUrl` to module level in `api/history.js`
