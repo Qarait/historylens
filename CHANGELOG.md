@@ -6,6 +6,24 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.3] — 2026-03-25
+
+### Changed
+- `CONFIG.maxTokens` reduced from 4000 to 1800 to improve
+  response latency. Responses consistently stay under
+  1800 tokens.
+- Added `anthropic-beta: prompt-caching-2024-07-31` header to reduce
+  latency on repeated requests.
+- Moved `anthropicUrl` to module level in `api/history.js`
+  for warm invocation reuse.
+
+### Note
+- `maxTokens` was found at 4000 — origin unknown, likely
+  changed during IDE debugging sessions without changelog
+  entry. This is why CONTRIBUTING.md rule 3 exists.
+
+---
+
 ## [1.0.2] — 2026-03-25
 
 ### Fixed
