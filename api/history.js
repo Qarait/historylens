@@ -40,8 +40,8 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    console.log('Anthropic status:', response.status);
-    console.log('Anthropic response:', JSON.stringify(data));
+    console.log('STATUS:', response.status);
+    console.log('RESPONSE:', JSON.stringify(data));
 
     // 5. Return the Anthropic response as-is
     return res.status(response.status).json(data);
