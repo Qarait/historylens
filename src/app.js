@@ -23,7 +23,7 @@
  * exposed in client-side code. See README.md for details.
  */
 const CONFIG = {
-  model:              'claude-haiku-4-5-20251001',
+  model:              'claude-3-haiku-20240307',
   maxTokens:          4000,
   apiEndpoint:        '/api/history',
   hookCycleInterval:  5000,   // ms between landing hook rotations
@@ -31,6 +31,8 @@ const CONFIG = {
   cacheEnabled:       true,   // in-memory cache for session
   storageKeyTimeline: 'hl_timeline_v1',
   storageKeyComps:    'hl_saved_comps_v1',
+  minYear:            -3000,
+  maxYear:            2024,
 };
 
 /* ── REGION DEFINITIONS ──────────────────────────────────────────────────── */
@@ -140,6 +142,7 @@ const SURPRISE_POOL = [
 const cache          = new Map();       // year (int) → parsed API response
 const searchHistory  = [];              // [{ year, era }]
 let compareMode      = false;
+let loadingActive     = false;
 let loadingTimer     = null;
 let progressTimer    = null;
 let currentYear      = null;
@@ -309,6 +312,7 @@ function toggleCompare() {
   compareMode = !compareMode;
   document.getElementById('compareTrack').classList.toggle('on', compareMode);
   document.getElementById('compareRow').classList.toggle('visible', compareMode);
+  document.getElementById('searchBtn').textContent = compareMode ? 'Explore Comparison' : 'Explore →';
   if (compareMode) document.getElementById('yearInput2').focus();
 }
 
@@ -407,12 +411,27 @@ function startHookCycle() {
 /* ── EXPLORE (main entry) ────────────────────────────────────────────────── */
 async function explore() {
   const raw  = document.getElementById('yearInput').value.trim();
-  const year = parseInt(raw);
+  const year = parseInt(raw, 10);
 
   if (!raw || isNaN(year)) {
     showError('Please enter a valid year (e.g. 1821).');
     return;
   }
+
+  // Stress Test Fix: Range Validation
+  if (year < CONFIG.minYear || year > CONFIG.maxYear) {
+    showError(`Please enter a year between ${CONFIG.minYear} BCE and ${CONFIG.maxYear} CE.`);
+    return;
+  }
+
+  // Stress Test Fix: Year 0
+  if (year === 0) {
+    showError('Year 0 does not exist in the historian\'s calendar. Try 1 BCE or 1 CE.');
+    return;
+  }
+
+  // Stress Test Fix: Concurrency Guard
+  if (loadingActive) return;
 
   hideError();
   hideResults();
@@ -476,19 +495,41 @@ async function exploreCompare(year1, year2) {
   }
 }
 
+/**
+ * Validates that the AI response matches the expected structure.
+ * Prevents UI crashes from incomplete or malformed JSON.
+ */
+function validateSchema(data) {
+  if (!data || typeof data !== 'object') throw new Error('schema');
+  if (typeof data.era_description !== 'string') throw new Error('schema');
+  
+  const requiredRegions = ['europe', 'asia', 'namerica', 'africa', 'oceania'];
+  if (!data.regions || typeof data.regions !== 'object') throw new Error('schema');
+  
+  for (const rid of requiredRegions) {
+    const r = data.regions[rid];
+    if (!r || !Array.isArray(r.events) || r.events.length === 0) {
+      throw new Error('schema');
+    }
+  }
+  return true;
+}
+
 function handleFetchError(err) {
   const msg = err.message || '';
   if (msg.includes('401') || msg.includes('403')) {
     showError('Authentication failed. Check your API key.');
     document.getElementById('apiKeyNotice').classList.add('visible');
+  } else if (msg.includes('404')) {
+    showError('API endpoint not found. If running locally, please use "vercel dev" instead of a static server.');
   } else if (msg.includes('429')) {
     showError('Rate limit reached. Please wait a moment and try again.');
   } else if (msg.includes('timeout')) {
     showError('The request timed out. Please try again — the API may be busy.');
-  } else if (msg.includes('parse')) {
-    showError('Received unexpected data from the API. Please try again.');
+  } else if (msg.includes('parse') || msg.includes('schema')) {
+    showError('Received unexpected data format. Please try again.');
   } else {
-    showError('Could not load data. Check your connection and API key.');
+    showError('Could not load data. Ensure "vercel dev" is running and your API key is configured.');
   }
   console.error('[HistoryLens]', err);
 }
@@ -573,8 +614,11 @@ HARD CONSTRAINTS:
     }
 
     try {
-      return JSON.parse(match[0]);
+      const parsed = JSON.parse(match[0]);
+      validateSchema(parsed);
+      return parsed;
     } catch (e) {
+      if (e.message === 'schema') throw e;
       throw new Error('parse: invalid JSON structure');
     }
   } catch (err) {
@@ -1167,8 +1211,11 @@ function finishProgress() {
 
 /* ── LOADING UI ──────────────────────────────────────────────────────────── */
 function showLoading() {
+  loadingActive = true;
   document.getElementById('loadingSection').classList.add('active');
   document.getElementById('searchBtn').classList.add('loading');
+  document.getElementById('searchBtn').disabled = true;
+  document.getElementById('surpriseBtn').disabled = true;
   startProgress();
 
   let msgIndex = 0;
@@ -1189,11 +1236,14 @@ function showLoading() {
 }
 
 function hideLoading() {
+  loadingActive = false;
   clearInterval(loadingTimer);
   clearTimeout(slowWarningTimer);
   finishProgress();
   document.getElementById('loadingSection').classList.remove('active');
   document.getElementById('searchBtn').classList.remove('loading');
+  document.getElementById('searchBtn').disabled = false;
+  document.getElementById('surpriseBtn').disabled = false;
 }
 
 /* ── RESULTS HELPERS ─────────────────────────────────────────────────────── */
