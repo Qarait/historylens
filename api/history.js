@@ -3,6 +3,9 @@
  * Proxies requests to Anthropic to secure the API key.
  */
 
+// Keep function warm — reuse fetch across invocations
+const anthropicUrl = 'https://api.anthropic.com/v1/messages';
+
 export default async function handler(req, res) {
   // 1. Accept POST requests only
   if (req.method !== 'POST') {
@@ -33,12 +36,13 @@ export default async function handler(req, res) {
 
   try {
     // 4. Forward the request to Anthropic
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(anthropicUrl, {
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
         'x-api-key':         apiKey,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta':    'prompt-caching-2024-07-31',
       },
       body: JSON.stringify(req.body),
     });
