@@ -15,8 +15,20 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Anthropic API key not configured on server' });
   }
 
+  // 3. Basic request validation (Hardening)
+  const { messages } = req.body || {};
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'Invalid request: Missing messages' });
+  }
+
+  // Validate combined prompt length to prevent proxy abuse
+  const promptText = messages.map(m => m.content || '').join('');
+  if (promptText.length < 100 || promptText.length > 5000) {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
+
   try {
-    // 3. Forward the request to Anthropic
+    // 4. Forward the request to Anthropic
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -27,8 +39,11 @@ export default async function handler(req, res) {
       body: JSON.stringify(req.body),
     });
 
-    // 4. Return the Anthropic response as-is
     const data = await response.json();
+    console.log('Anthropic status:', response.status);
+    console.log('Anthropic response:', JSON.stringify(data));
+
+    // 5. Return the Anthropic response as-is
     return res.status(response.status).json(data);
 
   } catch (err) {
