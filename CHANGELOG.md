@@ -6,6 +6,24 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.2] — 2026-03-25
+
+### Fixed
+- Server-side prompt validation was rejecting all requests
+  due to an incorrect 5,000 character limit. The historian
+  prompt is ~3,500 characters. Limit corrected to 50,000.
+
+---
+
+## [1.0.1] — 2025-03
+
+### Added
+- **Secure Backend Proxy** — Vercel Serverless Function implementation for API key security.
+- **Vercel Routing** — `vercel.json` configuration for unified routing.
+- **Hardening** — Range validation (-3000 to 2024), UI concurrency locks, and Year 0 handling.
+
+---
+
 ## [1.0.0] — 2025-01
 
 ### Added
@@ -52,7 +70,6 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 ## Roadmap
 
 ### [1.1.0] — Planned
-- [ ] Backend proxy for secure API key handling (Vercel Edge Function)
 - [ ] Source citations alongside events (Wikipedia / Britannica links)
 - [ ] Improved Oceania coverage for pre-contact periods
 
