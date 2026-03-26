@@ -24,6 +24,13 @@
  */
 const CONFIG = {
   model:              'claude-haiku-4-5-20251001',
+  // maxTokens: DO NOT lower this without testing first.
+  // The 5-region JSON schema produces ~9,800 char responses
+  // requiring 2,450+ tokens. stop_reason: max_tokens in the
+  // Anthropic response means this value is too low.
+  // To test: check Anthropic response for stop_reason field.
+  // History: 2200 (broke) → 1800 (broke) → 3500 (correct)
+  // Minimum safe value: 3000. Current: 3500.
   maxTokens:          3500,
   apiEndpoint:        '/api/history',
   hookCycleInterval:  5000,   // ms between landing hook rotations
