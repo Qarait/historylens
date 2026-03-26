@@ -6,6 +6,27 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.4] — 2026-03-26
+
+### Fixed
+- `CONFIG.maxTokens` raised from 2200 to 3500. The 5-region
+  schema (including Oceania) produces responses of ~9,800
+  characters requiring ~2,450+ tokens. The 2200 limit was
+  truncating JSON mid-string causing `JSON.parse` failures
+  shown to users as "Received unexpected data format."
+  Root cause confirmed via `stop_reason: max_tokens` in
+  Anthropic response.
+
+### Note
+- `maxTokens` history: 2200 (original) → 4000 (unknown IDE
+  change) → 1800 (over-optimized) → 2200 (reverted) →
+  3500 (correct value for 5-region schema)
+- Lesson: `maxTokens` must be measured against actual
+  response size. Run a test query and check `stop_reason`
+  in the Anthropic response before setting this value.
+
+---
+
 ## [1.0.3] — 2026-03-25
 
 ### Changed
