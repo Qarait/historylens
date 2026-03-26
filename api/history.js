@@ -49,6 +49,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    if (response.status !== 200) {
+      console.error('ANTHROPIC ERROR:', response.status, JSON.stringify(data));
+    }
+
     // 5. Return the Anthropic response as-is
     return res.status(response.status).json(data);
 

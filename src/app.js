@@ -615,6 +615,8 @@ HARD CONSTRAINTS:
 
     try {
       const parsed = JSON.parse(match[0]);
+      console.log('PARSED OK, keys:', Object.keys(parsed));
+      console.log('REGIONS:', parsed.regions ? Object.keys(parsed.regions) : 'MISSING');
       validateSchema(parsed);
       return parsed;
     } catch (e) {
