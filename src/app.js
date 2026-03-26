@@ -1216,25 +1216,20 @@ function showLoading() {
   loadingActive = true;
   document.getElementById('loadingSection').classList.add('active');
   document.getElementById('searchBtn').classList.add('loading');
-  document.getElementById('searchBtn').disabled = true;
-  document.getElementById('surpriseBtn').disabled = true;
   startProgress();
-
   let msgIndex = 0;
   const statusEl = document.getElementById('loadingStatus');
   statusEl.textContent = LOADING_MSGS[0];
-
   loadingTimer = setInterval(() => {
     msgIndex = (msgIndex + 1) % LOADING_MSGS.length;
     statusEl.textContent = LOADING_MSGS[msgIndex];
   }, CONFIG.loadingMsgInterval);
-
   slowWarningTimer = setTimeout(() => {
     clearInterval(loadingTimer);
     statusEl.textContent = 'Taking longer than usual — the API may be busy.';
   }, 10000);
-
-  document.getElementById('loadingSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('loadingSection')
+    .scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function hideLoading() {
@@ -1244,8 +1239,6 @@ function hideLoading() {
   finishProgress();
   document.getElementById('loadingSection').classList.remove('active');
   document.getElementById('searchBtn').classList.remove('loading');
-  document.getElementById('searchBtn').disabled = false;
-  document.getElementById('surpriseBtn').disabled = false;
 }
 
 /* ── RESULTS HELPERS ─────────────────────────────────────────────────────── */
