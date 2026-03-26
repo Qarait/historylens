@@ -24,7 +24,7 @@
  */
 const CONFIG = {
   model:              'claude-haiku-4-5-20251001',
-  maxTokens:          2200,
+  maxTokens:          3500,
   apiEndpoint:        '/api/history',
   hookCycleInterval:  5000,   // ms between landing hook rotations
   loadingMsgInterval: 2800,   // ms between loading status messages
