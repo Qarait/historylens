@@ -25,13 +25,12 @@
 const CONFIG = {
   model:              'claude-haiku-4-5-20251001',
   // maxTokens: DO NOT lower this without testing first.
-  // The 5-region JSON schema produces ~9,800 char responses
-  // requiring 2,450+ tokens. stop_reason: max_tokens in the
-  // Anthropic response means this value is too low.
+  // The 4-region JSON schema produces ~7,800 char responses
+  // requiring ~2,000 tokens. Safe minimum for 4-region schema is 2500.
+  // Current value is 2800 to provide 300 token headroom.
   // To test: check Anthropic response for stop_reason field.
-  // History: 2200 (broke) → 1800 (broke) → 3500 (correct)
-  // Minimum safe value: 3000. Current: 3500.
-  maxTokens:          3500,
+  // History: 2200 (broke) → 1800 (broke) → 3500 (correct for 5-region) → 2800 (4-region)
+  maxTokens:          2800,
   apiEndpoint:        '/api/history',
   hookCycleInterval:  5000,   // ms between landing hook rotations
   loadingMsgInterval: 2800,   // ms between loading status messages
@@ -510,7 +509,7 @@ function validateSchema(data) {
   if (!data || typeof data !== 'object') throw new Error('schema');
   if (typeof data.era_description !== 'string') throw new Error('schema');
   
-  const requiredRegions = ['europe', 'asia', 'namerica', 'africa', 'oceania'];
+  const requiredRegions = ['europe', 'asia', 'namerica', 'africa'];
   if (!data.regions || typeof data.regions !== 'object') throw new Error('schema');
   
   for (const rid of requiredRegions) {
@@ -553,7 +552,6 @@ BANNED words: ongoing, attempted, continued, various, numerous, significant, imp
 REQUIRED verbs: triggered, consolidated, fractured, collapsed, accelerated, cemented, destabilized, expanded, contracted, eclipsed, redirected, dismantled, upended, reinforced, exposed, suppressed, entrenched, imposed
 EVENT DESCRIPTION: [Subject] + [strong verb] + [object] + [consequence]. 1 sentence.
 THESIS HEADLINE: a verdict in 4-6 words, not a description.
-OCEANIA: If records are sparse, state that honestly. Never fabricate. Use: "Limited recorded large-scale political developments in this period — [brief honest note on what was present]"
 
 SCHEMA:
 {
@@ -580,8 +578,7 @@ SCHEMA:
     "europe":   { "state":"2-3 words","thesis_headline":"4-6 word verdict","thesis_argument":"1 analytical sentence","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"1 sentence" },
     "asia":     { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." },
     "namerica": { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." },
-    "africa":   { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." },
-    "oceania":  { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." }
+    "africa":   { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." }
   }
 }
 
@@ -878,7 +875,7 @@ function buildCard(region, rd) {
 
 /* ── CROSS-REGION BLOCK ──────────────────────────────────────────────────── */
 function buildCrossRegionBlock(crossData) {
-  const REGION_CLASS = { europe: 'europe', asia: 'asia', namerica: 'namerica', africa: 'africa', oceania: 'oceania' };
+  const REGION_CLASS = { europe: 'europe', asia: 'asia', namerica: 'namerica', africa: 'africa' };
 
   const block = document.createElement('div');
   block.className = 'cross-region-block';

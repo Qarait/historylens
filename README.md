@@ -40,28 +40,30 @@ HistoryLens uses the [Anthropic API](https://console.anthropic.com). Create an a
 
 ### 3. Configure
 
-Open `src/app.js` and find the `fetch()` call inside `fetchHistory()`. Add your key to the request headers:
+HistoryLens is pre-configured to use a secure backend proxy (`/api/history`). You do **not** need to add your API key to the client-side JavaScript.
 
-```js
-headers: {
-  'Content-Type':    'application/json',
-  'x-api-key':       'YOUR_API_KEY_HERE',
-  'anthropic-version': '2023-06-01',
-},
-```
+Instead, define your API key as an environment variable:
+- **Local development (.env):** `ANTHROPIC_API_KEY=your_key_here`
+- **Vercel deployment:** Add `ANTHROPIC_API_KEY` to your project's **Environment Variables** in the dashboard.
 
-> **Note for production / school deployment:** proxying the API call through a backend is strongly recommended so the key is never exposed in client-side code. A minimal Vercel Edge Function or Cloudflare Worker is sufficient.
+This ensures your key remains secure and is never exposed to the public browser.
 
 ### 4. Run
 
+HistoryLens requires a backend proxy to execute the logic in `api/history.js`. To run locally with full functionality, you **must** use the Vercel CLI:
+
 ```bash
-# Any static server works
-python -m http.server 8000
-# or
-npx serve .
+# Install Vercel CLI if you haven't (locally or globally)
+npm install -g vercel
+
+# Start the development server (runs both frontend and api)
+vercel dev
 ```
 
-Open `http://localhost:8000`.
+Open `http://localhost:3000`.
+
+> [!IMPORTANT]
+> A standard static server (like `npx serve` or `python -m http.server`) will **not** work because it does not execute the Node.js functions in the `api/` directory.
 
 ---
 
