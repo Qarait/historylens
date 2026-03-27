@@ -1,0 +1,209 @@
+{
+  "summary": {
+    "minimal": {
+      "avg_latency": 12569,
+      "avg_ttft": 8467.111111111111,
+      "avg_score": 1.6666666666666667,
+      "perfect_rate": 33.33333333333333
+    },
+    "low": {
+      "avg_latency": 12680.222222222223,
+      "avg_ttft": 8142.777777777777,
+      "avg_score": 2.7777777777777777,
+      "perfect_rate": 55.55555555555556
+    }
+  },
+  "results": [
+    {
+      "year": "44 BCE",
+      "minimal": {
+        "ttft_ms": 30618,
+        "latency_ms": 38654,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      },
+      "low": {
+        "ttft_ms": 15844,
+        "latency_ms": 24475,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      }
+    },
+    {
+      "year": "476",
+      "minimal": {
+        "ttft_ms": 4209,
+        "latency_ms": 7211,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "JSON Parse Error"
+        ],
+        "failureType": "Malformed JSON"
+      },
+      "low": {
+        "ttft_ms": 986,
+        "latency_ms": 9771,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      }
+    },
+    {
+      "year": "1066",
+      "minimal": {
+        "ttft_ms": 15914,
+        "latency_ms": 24904,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      },
+      "low": {
+        "ttft_ms": 19341,
+        "latency_ms": 26625,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      }
+    },
+    {
+      "year": "1347",
+      "minimal": {
+        "ttft_ms": 703,
+        "latency_ms": 9496,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "JSON Parse Error"
+        ],
+        "failureType": "Malformed JSON"
+      },
+      "low": {
+        "ttft_ms": 16206,
+        "latency_ms": 24131,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      }
+    },
+    {
+      "year": "1453",
+      "minimal": {
+        "ttft_ms": 24760,
+        "latency_ms": 32440,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      },
+      "low": {
+        "ttft_ms": 20908,
+        "latency_ms": 28763,
+        "score": 5,
+        "perfect_schema": true,
+        "errors": [],
+        "failureType": "Success"
+      }
+    },
+    {
+      "year": "1593",
+      "minimal": {
+        "ttft_ms": 0,
+        "latency_ms": 152,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      },
+      "low": {
+        "ttft_ms": 0,
+        "latency_ms": 89,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      }
+    },
+    {
+      "year": "1776",
+      "minimal": {
+        "ttft_ms": 0,
+        "latency_ms": 90,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      },
+      "low": {
+        "ttft_ms": 0,
+        "latency_ms": 86,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      }
+    },
+    {
+      "year": "1914",
+      "minimal": {
+        "ttft_ms": 0,
+        "latency_ms": 85,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      },
+      "low": {
+        "ttft_ms": 0,
+        "latency_ms": 94,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      }
+    },
+    {
+      "year": "1945",
+      "minimal": {
+        "ttft_ms": 0,
+        "latency_ms": 89,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      },
+      "low": {
+        "ttft_ms": 0,
+        "latency_ms": 88,
+        "score": 0,
+        "perfect_schema": false,
+        "errors": [
+          "[HTTP/API error] Status 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on t"
+        ],
+        "failureType": "HTTP/API error"
+      }
+    }
+  ]
+}

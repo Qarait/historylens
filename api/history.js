@@ -3,8 +3,8 @@
  * Proxies requests to Anthropic to secure the API key.
  */
 
-// Keep function warm — reuse fetch across invocations
-const anthropicUrl = 'https://api.anthropic.com/v1/messages';
+// Keep function warm
+const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
 
 export default async function handler(req, res) {
   // 1. Accept POST requests only
@@ -13,15 +13,15 @@ export default async function handler(req, res) {
   }
 
   // 2. Read API key from environment
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Anthropic API key not configured on server' });
+    return res.status(500).json({ error: 'Gemini API key not configured on server' });
   }
 
   // 3. Basic request validation (Hardening)
-  const { messages } = req.body || {};
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'Invalid request: Missing messages' });
+  const { payload, model } = req.body || {};
+  if (!payload || !Array.isArray(payload.contents) || payload.contents.length === 0) {
+    return res.status(400).json({ error: 'Invalid request: Missing contents' });
   }
 
   // RULE: Before changing this limit, measure the real prompt in src/app.js first.
@@ -29,31 +29,29 @@ export default async function handler(req, res) {
   // static text + a short year label (~8 chars). Total per request: ~3,490 chars.
   // Do NOT set a limit below 10,000 without re-measuring after any prompt change.
   // History: original limit of 5,000 blocked all requests (bug fixed in v1.0.2).
-  const promptText = messages.map(m => m.content || '').join('');
+  const promptText = payload.contents[0].parts.map(p => p.text || '').join('');
   if (promptText.length < 100 || promptText.length > 50000) {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
   try {
-    // 4. Forward the request to Anthropic
-    const response = await fetch(anthropicUrl, {
+    // 4. Forward the request to Gemini API
+    const targetModel = model || 'gemini-3-flash-preview';
+    const requestUrl = `${baseUrl}${targetModel}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(requestUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta':    'prompt-caching-2024-07-31',
-      },
-      body: JSON.stringify(req.body),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
 
     if (response.status !== 200) {
-      console.error('ANTHROPIC ERROR:', response.status, JSON.stringify(data));
+      console.error('GEMINI ERROR:', response.status, JSON.stringify(data));
     }
 
-    // 5. Return the Anthropic response as-is
+    // 5. Return the Gemini response as-is
     return res.status(response.status).json(data);
 
   } catch (err) {

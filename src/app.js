@@ -23,14 +23,12 @@
  * exposed in client-side code. See README.md for details.
  */
 const CONFIG = {
-  model:              'claude-haiku-4-5-20251001',
-  // maxTokens: DO NOT lower this without testing first.
+  model:              'gemini-3-flash-preview',
+  // maxOutputTokens: DO NOT lower this without testing first.
   // The 4-region JSON schema produces ~7,800 char responses
   // requiring ~2,000 tokens. Safe minimum for 4-region schema is 2500.
-  // Current value is 2800 to provide 300 token headroom.
-  // To test: check Anthropic response for stop_reason field.
-  // History: 2200 (broke) → 1800 (broke) → 3500 (correct for 5-region) → 2800 (4-region)
-  maxTokens:          2800,
+  // To test: check benchmark_results for parse timeouts.
+  maxOutputTokens:    2800,
   apiEndpoint:        '/api/history',
   hookCycleInterval:  5000,   // ms between landing hook rotations
   loadingMsgInterval: 2800,   // ms between loading status messages
@@ -597,9 +595,15 @@ HARD CONSTRAINTS:
       headers: { 'Content-Type': 'application/json' },
       signal:  controller.signal,
       body: JSON.stringify({
-        model:      CONFIG.model,
-        max_tokens: CONFIG.maxTokens,
-        messages:   [{ role: 'user', content: prompt }],
+        model: CONFIG.model,
+        payload: {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: CONFIG.maxOutputTokens,
+            responseMimeType: "application/json",
+            thinkingConfig: { thinkingLevel: "LOW" }
+          }
+        }
       }),
     });
 
@@ -610,8 +614,16 @@ HARD CONSTRAINTS:
     }
 
     const apiData = await response.json();
-    const rawContent = apiData.content.map(block => block.text || '').join('');
+    let rawContent = '';
     
+    if (apiData.candidates && apiData.candidates[0].content && apiData.candidates[0].content.parts) {
+      for (const part of apiData.candidates[0].content.parts) {
+        if (part.text) rawContent += part.text;
+      }
+    } else {
+      throw new Error('parse: Unrecognized response format');
+    }
+
     const match = rawContent.match(/\{[\s\S]*\}/);
     if (!match) {
       throw new Error('parse: No JSON object found');
