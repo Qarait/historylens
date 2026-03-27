@@ -7,7 +7,7 @@
  *
  * Strategy: import the handler directly and supply mock req/res objects.
  * For the one test that requires a valid prompt, globalThis.fetch is
- * stubbed so no real Anthropic call is made.
+ * stubbed so no real Gemini call is made.
  */
 
 import { test } from 'node:test';
@@ -30,14 +30,16 @@ function makeMocks(body, method = 'POST') {
 }
 
 /**
- * Build a messages array with a single user message of exact `length` chars.
+ * Build a Gemini payload with a single text part of exact `length` chars.
  */
 function msgOf(length) {
-  return [{ role: 'user', content: 'A'.repeat(length) }];
+  return {
+    contents: [{ parts: [{ text: 'A'.repeat(length) }] }]
+  };
 }
 
-// Stub process.env.ANTHROPIC_API_KEY so the handler sees a key
-process.env.ANTHROPIC_API_KEY = 'sk-test-stub';
+// Stub process.env.GEMINI_API_KEY so the handler sees a key
+process.env.GEMINI_API_KEY = 'AIza-test-stub';
 
 // Import the handler (ESM)
 const { default: handler } = await import('../api/history.js');
@@ -48,10 +50,10 @@ test('valid prompt (3500 chars) passes validation — NOT 400', async () => {
   // Stub fetch so no real HTTP call is made
   globalThis.fetch = async () => ({
     status: 200,
-    json:   async () => ({ type: 'message', content: [] }),
+    json:   async () => ({ candidates: [] }),
   });
 
-  const { req, res } = makeMocks({ messages: msgOf(3500) });
+  const { req, res } = makeMocks({ payload: msgOf(3500) });
   await handler(req, res);
 
   assert.notEqual(res._status, 400, 'Should not be rejected with 400');
@@ -59,20 +61,20 @@ test('valid prompt (3500 chars) passes validation — NOT 400', async () => {
 });
 
 test('prompt too short (99 chars) is rejected with 400', async () => {
-  const { req, res } = makeMocks({ messages: msgOf(99) });
+  const { req, res } = makeMocks({ payload: msgOf(99) });
   await handler(req, res);
 
   assert.equal(res._status, 400);
 });
 
 test('prompt too long (50001 chars) is rejected with 400', async () => {
-  const { req, res } = makeMocks({ messages: msgOf(50001) });
+  const { req, res } = makeMocks({ payload: msgOf(50001) });
   await handler(req, res);
 
   assert.equal(res._status, 400);
 });
 
-test('missing messages array is rejected with 400', async () => {
+test('missing contents array is rejected with 400', async () => {
   const { req, res } = makeMocks({});
   await handler(req, res);
 
