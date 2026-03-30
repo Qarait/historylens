@@ -691,14 +691,7 @@ function renderSingle(year, data) {
   addToTimeline(year, data.era_description || '');
 
   document.getElementById('results').classList.add('active');
-  setTimeout(() => {
-    const el = document.getElementById('hookMoment').classList.contains('visible')
-      ? document.getElementById('hookMoment')
-      : document.getElementById('results');
-    const rect = el.getBoundingClientRect();
-    const scrollTop = window.pageYOffset + rect.top - 100;
-    window.scrollTo({ top: scrollTop, behavior: 'smooth' });
-  }, 150);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ── RENDER — COMPARE ────────────────────────────────────────────────────── */
@@ -736,11 +729,7 @@ function renderCompare(year1, data1, year2, data2) {
   addToTimeline(year2, data2.era_description || '');
 
   document.getElementById('results').classList.add('active');
-  setTimeout(() => {
-    const rect = document.getElementById('results').getBoundingClientRect();
-    const scrollTop = window.pageYOffset + rect.top - 100;
-    window.scrollTo({ top: scrollTop, behavior: 'smooth' });
-  }, 150);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ── CARD BUILDER ────────────────────────────────────────────────────────── */
