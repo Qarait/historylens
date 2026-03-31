@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const isAllowedOrigin = 
     origin.includes('localhost') || 
     origin.includes('historylens.app') || 
-    origin.includes('vercel.app');
+    origin.includes('historylens-psi.vercel.app');
 
   if (!isAllowedOrigin && process.env.NODE_ENV === 'production') {
     return res.status(403).json({ error: 'CORS: Unauthorized origin' });
