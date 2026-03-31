@@ -40,17 +40,43 @@ export default async function handler(req, res) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
-
     if (response.status !== 200) {
-      console.error('ANTHROPIC ERROR:', response.status, JSON.stringify(data));
+      const errorData = await response.json();
+      console.error('ANTHROPIC ERROR:', response.status, JSON.stringify(errorData));
+      return res.status(response.status).json(errorData);
     }
 
-    // 5. Return the Anthropic response as-is
-    return res.status(response.status).json(data);
+    // 5. Handle streaming vs non-streaming
+    if (body.stream) {
+      // Set headers for SSE (Server-Sent Events)
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Content-Encoding', 'none'); // Disable compression for real-time
+
+      if (!response.body) throw new Error('No response body from Anthropic');
+
+      // Forward chunks from Anthropic directly to client
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        // Write chunk directly to response
+        res.write(value);
+      }
+      res.end();
+    } else {
+      // Standard JSON response
+      const data = await response.json();
+      return res.status(200).json(data);
+    }
 
   } catch (err) {
-    // 5. Return clean JSON error for fetch failures
+    // 6. Return clean JSON error for fetch failures
     console.error('[Vercel Backend]', err);
     return res.status(500).json({
       error: 'Backend fetch failed',

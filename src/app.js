@@ -467,15 +467,132 @@ async function exploreSingle(year) {
   }
 
   showLoading();
+  
+  let hasStartedRendering = false;
+  let accumulatedData = { regions: {} };
+  
   try {
-    const data = await fetchHistory(year);
-    if (CONFIG.cacheEnabled) cache.set(year, data);
-    addToSearchHistory(year, data.era_description || '');
-    renderSingle(year, data);
+    await fetchHistoryStream(year, {
+      onHeader: (era) => {
+        if (!hasStartedRendering) {
+          hasStartedRendering = true;
+          hideLoading();
+          initResultsContainer(year);
+        }
+        document.getElementById('resultsEra').textContent = era;
+        accumulatedData.era_description = era;
+      },
+      onHook: (text) => {
+        if (!hasStartedRendering) {
+          hasStartedRendering = true;
+          hideLoading();
+          initResultsContainer(year);
+        }
+        document.getElementById('hookText').innerHTML = boldNames(esc(text));
+        document.getElementById('hookMoment').classList.toggle('visible', !!text);
+        accumulatedData.hook_moment = text;
+      },
+      onContext: (text) => {
+        document.getElementById('globalContextText').textContent = text;
+        document.getElementById('globalContext').classList.toggle('visible', !!text);
+        accumulatedData.global_context = text;
+      },
+      onSignals: (signals) => {
+        renderSignals(signals);
+        accumulatedData.global_signals = signals;
+      },
+      onRegion: (id, regionData) => {
+        upsertRegionCard(id, regionData);
+        accumulatedData.regions[id] = regionData;
+      },
+      onCrossRegion: (crossData) => {
+        renderCrossRegion(crossData);
+        accumulatedData.cross_region = crossData;
+      },
+      onComplete: (fullData) => {
+        if (CONFIG.cacheEnabled) cache.set(year, fullData);
+        addToSearchHistory(year, fullData.era_description || '');
+        addToTimeline(year, fullData.era_description || '');
+        
+        // Final polish - ensure feedback bar is visible
+        const feedbackBar = document.getElementById('feedbackBar');
+        feedbackBar.style.display = 'flex';
+      }
+    });
+
   } catch (err) {
-    handleFetchError(err);
+    if (!hasStartedRendering) {
+       handleFetchError(err);
+    } else {
+       console.error('Streaming interrupted:', err);
+       showToast('⚠️ Response interrupted, some data may be missing.');
+    }
   } finally {
     hideLoading();
+  }
+}
+
+/**
+ * Prepares the results container for incremental updates.
+ */
+function initResultsContainer(year) {
+  document.getElementById('resultsYear').textContent = formatYear(year);
+  document.getElementById('resultsEra').textContent = 'Analyzing...';
+  document.getElementById('hookText').innerHTML = '';
+  document.getElementById('results').classList.add('active');
+  document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
+  
+  // Scroll to results once they start appearing
+  setTimeout(() => {
+    const el = document.getElementById('results');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+/**
+ * Updates or inserts a region card into the grid.
+ */
+function upsertRegionCard(id, regionData) {
+  const grid = document.querySelector('#regionsOutput .regions-grid');
+  if (!grid) return;
+
+  const mapping = REGIONS.find(r => r.id === id);
+  if (!mapping) return;
+
+  // Check if card already exists
+  let card = grid.querySelector(`.region-card[data-region="${id}"]`);
+  const newCard = buildCard(mapping, regionData);
+  
+  if (card) {
+    grid.replaceChild(newCard, card);
+  } else {
+    // Preserve REGIONS order if possible
+    const index = REGIONS.findIndex(r => r.id === id);
+    const existingCards = Array.from(grid.querySelectorAll('.region-card'));
+    let inserted = false;
+    
+    for (const existing of existingCards) {
+      const existingId = existing.dataset.region;
+      const existingIndex = REGIONS.findIndex(r => r.id === existingId);
+      if (existingIndex > index) {
+        grid.insertBefore(newCard, existing);
+        inserted = true;
+        break;
+      }
+    }
+    
+    if (!inserted) grid.appendChild(newCard);
+  }
+}
+
+function renderCrossRegion(crossData) {
+  const output = document.getElementById('regionsOutput');
+  // Remove existing cross-region block if any
+  const existing = output.querySelector('.cross-region-block');
+  if (existing) existing.remove();
+  
+  if (crossData) {
+    output.appendChild(buildCrossRegionBlock(crossData));
   }
 }
 
@@ -538,11 +655,174 @@ function handleFetchError(err) {
   console.error('[HistoryLens]', err);
 }
 
-/* ── API ─────────────────────────────────────────────────────────────────── */
-async function fetchHistory(year) {
-  const yearLabel = formatYear(year);
+/* ── STREAMING API ───────────────────────────────────────────────────────── */
 
-  const prompt = `You are a senior historian writing for an analytical audience. Year: ${yearLabel}.
+async function fetchHistoryStream(year, callbacks) {
+  const yearLabel = formatYear(year);
+  const prompt = getHistorianPrompt(yearLabel);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000); // Longer timeout for streaming
+
+  try {
+    const response = await fetch(CONFIG.apiEndpoint, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal:  controller.signal,
+      body: JSON.stringify({
+        model: CONFIG.model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: CONFIG.maxOutputTokens,
+        stream: true
+      }),
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `API ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+    
+    // State trackers for partial rendering
+    const renderedKeys = new Set();
+    const renderedRegions = new Set();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      buffer += chunk;
+
+      // Extract text content from Anthropic SSE format
+      // data: {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "..."}}
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // Keep partial line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const json = JSON.parse(line.substring(6));
+          if (json.type === 'content_block_delta' && json.delta?.text) {
+            fullText += json.delta.text;
+            processIncrementalText(fullText, renderedKeys, renderedRegions, callbacks);
+          }
+        } catch (e) {
+          // Incomplete JSON in SSE line, skip
+        }
+      }
+    }
+
+    // Final pass to ensure everything is caught
+    const finalData = finalizeParsing(fullText);
+    if (finalData) {
+      validateSchema(finalData);
+      callbacks.onComplete(finalData);
+    } else {
+      throw new Error('parse: Failed to reconstruct final JSON');
+    }
+
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
+/**
+ * Extracts and renders completed JSON keys from the incoming stream.
+ */
+function processIncrementalText(text, renderedKeys, renderedRegions, callbacks) {
+  // 1. Era Description
+  if (!renderedKeys.has('era_description')) {
+    const match = text.match(/"era_description":\s*"([^"]+)"/);
+    if (match) {
+      callbacks.onHeader(match[1]);
+      renderedKeys.add('era_description');
+    }
+  }
+
+  // 2. Hook Moment (Stream character by character)
+  const hookMatch = text.match(/"hook_moment":\s*"([^"]*)$| "hook_moment":\s*"([^"]*)"/);
+  if (hookMatch) {
+    const partialHook = hookMatch[1] || hookMatch[2];
+    callbacks.onHook(partialHook);
+    if (hookMatch[2] !== undefined) renderedKeys.add('hook_moment');
+  }
+
+  // 3. Global Context
+  if (!renderedKeys.has('global_context')) {
+    const match = text.match(/"global_context":\s*"([^"]+)"/);
+    if (match) {
+      callbacks.onContext(match[1]);
+      renderedKeys.add('global_context');
+    }
+  }
+
+  // 4. Global Signals (Render when block is complete)
+  if (!renderedKeys.has('global_signals')) {
+    const match = text.match(/"global_signals":\s*(\{[\s\S]*?\})/);
+    if (match) {
+      try {
+        const signals = JSON.parse(match[1]);
+        callbacks.onSignals(signals);
+        renderedKeys.add('global_signals');
+      } catch (e) {}
+    }
+  }
+
+  // 5. Regions (Render one by one when each region object is complete)
+  const regionsMatch = text.match(/"regions":\s*\{([\s\S]*)$/);
+  if (regionsMatch) {
+    const regionsChunk = regionsMatch[1];
+    for (const r of REGIONS) {
+      if (renderedRegions.has(r.id)) continue;
+      // Look for the completion of a region object: "region_id": { ... }
+      const rRegex = new RegExp(`"${r.id}":\\s*(\\{[\\s\\S]*?\\})(?:,|\\})`);
+      const rMatch = regionsChunk.match(rRegex);
+      if (rMatch) {
+        try {
+          const rData = JSON.parse(rMatch[1]);
+          callbacks.onRegion(r.id, rData);
+          renderedRegions.add(r.id);
+        } catch (e) {}
+      }
+    }
+  }
+  
+  // 6. Cross Region
+  if (!renderedKeys.has('cross_region')) {
+    const match = text.match(/"cross_region":\s*(\{[\s\S]*?\})(?:,| \})/);
+    if (match) {
+      try {
+        const crossData = JSON.parse(match[1]);
+        callbacks.onCrossRegion(crossData);
+        renderedKeys.add('cross_region');
+      } catch (e) {}
+    }
+  }
+}
+
+function finalizeParsing(text) {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]);
+  } catch (e) {
+    // Basic repair if trailing braces are missing
+    try { return JSON.parse(match[0] + '}'); } catch (e2) {}
+    try { return JSON.parse(match[0] + '}}'); } catch (e3) {}
+    return null;
+  }
+}
+
+function getHistorianPrompt(yearLabel) {
+  return `You are a senior historian writing for an analytical audience. Year: ${yearLabel}.
 Return ONLY valid JSON. No markdown, no backticks, no prose outside the JSON.
 
 TONE RULES — enforce on every sentence:
@@ -585,6 +865,12 @@ HARD CONSTRAINTS:
 - global_signals values: exactly one of Low, Moderate, High, Critical, Rising, Declining, Stable, Collapsing
 - Ancient years: use civilisations active at that time.
 - Event year may vary ±5 years if needed for accuracy.`;
+}
+
+/* ── API (legacy / compare fallback) ─────────────────────────────────────── */
+async function fetchHistory(year) {
+  const yearLabel = formatYear(year);
+  const prompt = getHistorianPrompt(yearLabel);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 25000);
