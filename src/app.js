@@ -1066,7 +1066,7 @@ function renderTimeline(currentYr) {
   // Scroll current into view
   setTimeout(() => {
     const current = track.querySelector('.current');
-    if (current) current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (current) current.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
   }, 100);
 
   renderSavedComparisons();
@@ -1244,8 +1244,6 @@ function showLoading() {
     clearInterval(loadingTimer);
     statusEl.textContent = 'Taking longer than usual — the API may be busy.';
   }, 10000);
-  document.getElementById('loadingSection')
-    .scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function hideLoading() {
