@@ -23,7 +23,7 @@
  * exposed in client-side code. See README.md for details.
  */
 const CONFIG = {
-  model:              'gemini-3-flash-preview',
+  model:              'llama-3.3-70b-versatile',
   // maxOutputTokens: DO NOT lower this without testing first.
   // The 4-region JSON schema produces ~7,800 char responses
   // requiring ~2,000 tokens. Safe minimum for 4-region schema is 2500.
@@ -596,14 +596,9 @@ HARD CONSTRAINTS:
       signal:  controller.signal,
       body: JSON.stringify({
         model: CONFIG.model,
-        payload: {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            maxOutputTokens: CONFIG.maxOutputTokens,
-            responseMimeType: "application/json",
-            thinkingConfig: { thinkingLevel: "LOW" }
-          }
-        }
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: CONFIG.maxOutputTokens,
+        response_format: { type: 'json_object' }
       }),
     });
 
@@ -616,10 +611,8 @@ HARD CONSTRAINTS:
     const apiData = await response.json();
     let rawContent = '';
     
-    if (apiData.candidates && apiData.candidates[0].content && apiData.candidates[0].content.parts) {
-      for (const part of apiData.candidates[0].content.parts) {
-        if (part.text) rawContent += part.text;
-      }
+    if (apiData.choices && apiData.choices[0].message && apiData.choices[0].message.content) {
+      rawContent = apiData.choices[0].message.content;
     } else {
       throw new Error('parse: Unrecognized response format');
     }
