@@ -55,8 +55,8 @@ export default async function handler(req, res) {
   
   // Year validation
   const year = parseInt(body.year);
-  if (isNaN(year) || year < -3000 || year > 2025) {
-    return res.status(400).json({ error: 'Invalid year. Only -3000 to 2025 CE is supported.' });
+  if (isNaN(year) || year < -3000 || year > 2026) {
+    return res.status(400).json({ error: 'Invalid year. Only -3000 to 2026 CE is supported.' });
   }
 
   if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {

@@ -36,7 +36,7 @@ const CONFIG = {
   storageKeyTimeline: 'hl_timeline_v1',
   storageKeyComps:    'hl_saved_comps_v1',
   minYear:            -3000,
-  maxYear:            2024,
+  maxYear:            2026,
 };
 
 /* ── REGION DEFINITIONS ──────────────────────────────────────────────────── */
