@@ -766,28 +766,28 @@ function processIncrementalText(text, renderedKeys, renderedRegions, callbacks) 
 
   // 4. Global Signals (Render when block is complete)
   if (!renderedKeys.has('global_signals')) {
-    const match = text.match(/"global_signals":\s*(\{[\s\S]*?\})/);
-    if (match) {
-      try {
-        const signals = JSON.parse(match[1]);
-        callbacks.onSignals(signals);
-        renderedKeys.add('global_signals');
-      } catch (e) {}
+    const startIdx = text.indexOf('"global_signals":');
+    if (startIdx !== -1) {
+      const block = extractCompleteObject(text, startIdx);
+      if (block) {
+        try {
+          const signals = JSON.parse(block);
+          callbacks.onSignals(signals);
+          renderedKeys.add('global_signals');
+        } catch (e) {}
+      }
     }
   }
 
   // 5. Regions (Render one by one when each region object is complete)
-  const regionsMatch = text.match(/"regions":\s*\{([\s\S]*)$/);
-  if (regionsMatch) {
-    const regionsChunk = regionsMatch[1];
-    for (const r of REGIONS) {
-      if (renderedRegions.has(r.id)) continue;
-      // Look for the completion of a region object: "region_id": { ... }
-      const rRegex = new RegExp(`"${r.id}":\\s*(\\{[\\s\\S]*?\\})(?:,|\\})`);
-      const rMatch = regionsChunk.match(rRegex);
-      if (rMatch) {
+  for (const r of REGIONS) {
+    if (renderedRegions.has(r.id)) continue;
+    const startIdx = text.indexOf(`"${r.id}":`);
+    if (startIdx !== -1) {
+      const block = extractCompleteObject(text, startIdx);
+      if (block) {
         try {
-          const rData = JSON.parse(rMatch[1]);
+          const rData = JSON.parse(block);
           callbacks.onRegion(r.id, rData);
           renderedRegions.add(r.id);
         } catch (e) {}
@@ -797,15 +797,58 @@ function processIncrementalText(text, renderedKeys, renderedRegions, callbacks) 
   
   // 6. Cross Region
   if (!renderedKeys.has('cross_region')) {
-    const match = text.match(/"cross_region":\s*(\{[\s\S]*?\})(?:,| \})/);
-    if (match) {
-      try {
-        const crossData = JSON.parse(match[1]);
-        callbacks.onCrossRegion(crossData);
-        renderedKeys.add('cross_region');
-      } catch (e) {}
+    const startIdx = text.indexOf('"cross_region":');
+    if (startIdx !== -1) {
+      const block = extractCompleteObject(text, startIdx);
+      if (block) {
+        try {
+          const crossData = JSON.parse(block);
+          callbacks.onCrossRegion(crossData);
+          renderedKeys.add('cross_region');
+        } catch (e) {}
+      }
     }
   }
+}
+
+/**
+ * Robustly extracts a complete JSON object block starting after a key.
+ * Uses brace counting to handle nested objects/arrays correctly.
+ */
+function extractCompleteObject(text, startSearchIdx) {
+  const openBraceIdx = text.indexOf('{', startSearchIdx);
+  if (openBraceIdx === -1) return null;
+
+  let braceCount = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = openBraceIdx; i < text.length; i++) {
+    const char = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+    } else if (char === '{') {
+      braceCount++;
+    } else if (char === '}') {
+      braceCount--;
+      if (braceCount === 0) {
+        return text.substring(openBraceIdx, i + 1);
+      }
+    }
+  }
+  return null;
 }
 
 function finalizeParsing(text) {
