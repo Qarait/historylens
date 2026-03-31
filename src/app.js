@@ -691,7 +691,10 @@ function renderSingle(year, data) {
   addToTimeline(year, data.era_description || '');
 
   document.getElementById('results').classList.add('active');
-  setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 300);
+  setTimeout(() => {
+    const el = document.getElementById('results');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
 }
 
 /* ── RENDER — COMPARE ────────────────────────────────────────────────────── */
@@ -729,7 +732,10 @@ function renderCompare(year1, data1, year2, data2) {
   addToTimeline(year2, data2.era_description || '');
 
   document.getElementById('results').classList.add('active');
-  setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 300);
+  setTimeout(() => {
+    const el = document.getElementById('results');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
 }
 
 /* ── CARD BUILDER ────────────────────────────────────────────────────────── */
