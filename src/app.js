@@ -677,6 +677,7 @@ async function fetchHistoryStream(year, callbacks) {
         model: CONFIG.model,
         messages: [{ role: 'user', content: prompt }],
         max_tokens: CONFIG.maxOutputTokens,
+        year: year,
         stream: true
       }),
     });
@@ -930,7 +931,8 @@ async function fetchHistory(year) {
       body: JSON.stringify({
         model: CONFIG.model,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: CONFIG.maxOutputTokens
+        max_tokens: CONFIG.maxOutputTokens,
+        year: year
       }),
     });
 
