@@ -443,6 +443,10 @@ async function explore() {
   document.getElementById('searchBtn').disabled = true;
   currentYear = year;
 
+  // Update URL for shareability
+  const newUrl = `${window.location.pathname}?year=${year}`;
+  window.history.pushState({ year }, '', newUrl);
+
   try {
     if (compareMode) {
       const raw2  = document.getElementById('yearInput2').value.trim();
@@ -1531,11 +1535,26 @@ function doCopy() {
 }
 
 function shareUrl() {
-  if (!currentYear) return;
-  const url = `${location.origin}${location.pathname}?year=${currentYear}`;
-  navigator.clipboard.writeText(url)
-    .then(() => showToast('🔗 Link copied!'))
-    .catch(() => showToast('Could not copy link.'));
+  if (!currentYear) {
+    showToast('Search for a year first to share!');
+    return;
+  }
+  const url = `${window.location.origin}${window.location.pathname}?year=${currentYear}`;
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('🔗 Share link copied to clipboard!'))
+      .catch(() => showToast('Could not copy link.'));
+  } else {
+    // Fallback for older browsers or non-secure contexts
+    const tempInput = document.createElement('input');
+    tempInput.value = url;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    showToast('🔗 Share link copied!');
+  }
 }
 
 /* ── PROGRESS BAR ────────────────────────────────────────────────────────── */
