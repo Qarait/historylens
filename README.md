@@ -2,12 +2,12 @@
 
 **Understand what the world looked like in any year.**
 
-Enter a year. See what was happening simultaneously across Europe, Asia, the Americas, Africa, and Oceania — not as a list of facts, but as a structured comparative analysis.
+Enter a year. See what was happening simultaneously across Europe, Asia, the Americas, and Africa — not as a list of facts, but as a structured comparative analysis.
 
 **Live Demo:** [historylens-psi.vercel.app](https://historylens-psi.vercel.app)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-c9a84c.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.0.0-16a085.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-16a085.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 ---
@@ -18,8 +18,8 @@ Most history tools give you a timeline. HistoryLens gives you a cross-section �
 
 For any year from ancient history to the present, it produces:
 
-- **A hook sentence** — one or two lines that juxtapose what was happening across regions simultaneously
-- **Per-region analysis** — Europe, Asia, the Americas, Africa, and Oceania, each with a thesis (not a summary), ranked events, notable figures, and a "why it matters" conclusion
+- **Real-time streaming engine (v1.1.0)** — watch the analysis type out piece-by-piece. The "Hook" and "Era" appear instantly, followed by regional cards as the AI completes them.
+- **Per-region analysis** — Europe, Asia, the Americas, and Africa, each with a thesis (not a summary), ranked events, notable figures, and a "why it matters" conclusion
 - **Global signals** — a structured readout of war intensity, political fragmentation, economic pressure, trade activity, and ideological tension
 - **Cross-regional contrast** — an analytical statement connecting the regions, with specific bilateral tension notes
 
@@ -36,7 +36,7 @@ cd historylens
 
 ### 2. Get an API key
 
-HistoryLens uses the [Anthropic API](https://console.anthropic.com). Create an account and get a key — the free tier covers substantial usage.
+HistoryLens uses the [Anthropic API](https://console.anthropic.com). Create an account and get a key — it's a credit-based model, and new accounts typically receive initial trial credits to get started.
 
 ### 3. Configure
 
@@ -100,9 +100,9 @@ The prompt contains an explicit blocklist (`ongoing`, `attempted`, `continued`, 
 
 The 1-primary + 2-secondary constraint is not just visual — it forces the model to make an editorial judgment about which event most determined the trajectory of that region in that year. Without this constraint, the model produces three equally-weighted events that feel like a list. The ranking creates the perception that selection happened, which is the core of what distinguishes analysis from retrieval.
 
-### Why Oceania is included even when data is sparse
+### Why we use a custom-built streaming parser (v1.1.0)
 
-Excluding Oceania would be editorially dishonest. The tool's premise is "the whole world at once." A tool that silently omits an entire hemisphere because it's harder to cover reinforces the same Eurocentric bias it's trying to counteract. The prompt explicitly instructs the model to acknowledge sparse records honestly rather than fabricate — a region card that says "Limited recorded large-scale political developments — Polynesian expansion patterns continued" is more valuable than no card at all. It teaches students that the absence of written records is itself a historical fact.
+To provide an instant experience, we don't wait for the full JSON block from the LLM. Instead, we use a custom "brace-counting" incremental parser in `app.js` that identifies when top-level objects (like regional cards) are complete and renders them to the grid one-by-one. This reduces the "perceived" wait time from ~10 seconds to ~2 seconds.
 
 ### Why `innerHTML` is not used for AI output
 
@@ -145,9 +145,9 @@ HistoryLens is designed to complement, not replace, primary sources and textbook
 Contributions are welcome. Before opening a PR, please read the architecture decisions above — particularly the sections on prompt design and XSS prevention, as these affect the core quality and security of the tool.
 
 **Open issues worth tackling:**
-- [ ] Backend proxy for API key security (Vercel / Cloudflare Worker example)
+- [x] Backend proxy for API key security (Vercel serverless implementation)
 - [ ] Source citations alongside events
-- [ ] Oceania coverage improvements for pre-contact periods
+- [ ] Adaptive region lists based on historical relevance
 - [ ] Print stylesheet refinements for 3+ region compare mode
 - [ ] Offline mode with a pre-generated cache of the 50 most common years
 
