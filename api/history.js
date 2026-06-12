@@ -12,7 +12,8 @@ const MAX_REQUESTS = 6;              // Max requests per window
 
 export default async function handler(req, res) {
   // 1. CORS & Origin Protection
-  const origin = req.headers.origin || req.headers.referer || '';
+  const headers = req.headers || {};
+  const origin = headers.origin || headers.referer || '';
   const isAllowedOrigin = 
     origin.includes('localhost') || 
     origin.includes('historylens.app') || 
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
   }
 
   // 3. Simple Rate Limiting (IP-based)
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const ip = headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
   const now = Date.now();
   const userData = rateLimitMap.get(ip) || { count: 0, startTime: now };
 

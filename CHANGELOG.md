@@ -6,6 +6,18 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- On-demand "7 Key Events" panels for single-year and comparison results.
+- Globally balanced event selection with dates, locations, categories, summaries, and historical significance.
+- A dedicated server-side `/api/events` endpoint with input validation, rate limiting, response validation, and browser session caching.
+
+### Fixed
+- Updated API tests from the retired Gemini request shape to the current Anthropic proxy contract.
+
+---
+
 ## [1.0.4] — 2026-03-26
 
 ### Removed

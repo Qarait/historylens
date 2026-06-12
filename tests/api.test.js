@@ -1,89 +1,138 @@
-/**
- * tests/api.test.js
- *
- * Unit tests for api/history.js validation logic.
- * Uses Node's built-in test runner — no external dependencies.
- * Run with: node --test tests/api.test.js
- *
- * Strategy: import the handler directly and supply mock req/res objects.
- * For the one test that requires a valid prompt, globalThis.fetch is
- * stubbed so no real Gemini call is made.
- */
-
-import { test } from 'node:test';
+import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+delete process.env.NODE_ENV;
 
-/**
- * Minimal mock of Vercel's req/res objects.
- */
+const { default: historyHandler } = await import('../api/history.js');
+const { default: eventsHandler } = await import('../api/events.js');
+const originalFetch = globalThis.fetch;
+
 function makeMocks(body, method = 'POST') {
-  const req = { method, body };
+  const req = {
+    method,
+    body,
+    headers: { origin: 'http://localhost:3000', 'x-forwarded-for': `${Math.random()}` },
+    socket: { remoteAddress: '127.0.0.1' },
+  };
   const res = {
     _status: null,
-    _body:   null,
+    _body: null,
     status(code) { this._status = code; return this; },
-    json(data)   { this._body   = data; return this; },
+    json(data) { this._body = data; return this; },
+    setHeader() {},
   };
   return { req, res };
 }
 
-/**
- * Build a Gemini payload with a single text part of exact `length` chars.
- */
-function msgOf(length) {
+function validHistoryBody(overrides = {}) {
   return {
-    contents: [{ parts: [{ text: 'A'.repeat(length) }] }]
+    year: 2020,
+    model: 'claude-haiku-4-5-20251001',
+    messages: [{ role: 'user', content: 'A'.repeat(3500) }],
+    max_tokens: 2800,
+    ...overrides,
   };
 }
 
-// Stub process.env.GEMINI_API_KEY so the handler sees a key
-process.env.GEMINI_API_KEY = 'AIza-test-stub';
+function validEventsPayload() {
+  return {
+    selection_note: 'Selected for consequence and geographic breadth.',
+    events: Array.from({ length: 7 }, (_, index) => ({
+      title: `Event ${index + 1}`,
+      date: '2020',
+      location: `Region ${index + 1}`,
+      category: 'Politics',
+      summary: 'A factual summary of what happened. A second factual sentence.',
+      significance: 'This changed the long-term political landscape.',
+    })),
+  };
+}
 
-// Import the handler (ESM)
-const { default: handler } = await import('../api/history.js');
+beforeEach(() => {
+  process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+  delete process.env.NODE_ENV;
+});
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
 
-test('valid prompt (3500 chars) passes validation — NOT 400', async () => {
-  // Stub fetch so no real HTTP call is made
+test('history proxy forwards a valid Anthropic request', async () => {
+  globalThis.fetch = async (_url, options) => {
+    const forwarded = JSON.parse(options.body);
+    assert.equal(forwarded.messages[0].content.length, 3500);
+    assert.equal(forwarded.max_tokens, 2800);
+    return { status: 200, json: async () => ({ content: [{ text: '{}' }] }) };
+  };
+
+  const { req, res } = makeMocks(validHistoryBody());
+  await historyHandler(req, res);
+  assert.equal(res._status, 200);
+});
+
+test('history proxy rejects invalid prompt and method', async () => {
+  const short = makeMocks(validHistoryBody({ messages: [{ role: 'user', content: 'short' }] }));
+  await historyHandler(short.req, short.res);
+  assert.equal(short.res._status, 400);
+
+  const get = makeMocks({}, 'GET');
+  await historyHandler(get.req, get.res);
+  assert.equal(get.res._status, 405);
+});
+
+test('history proxy rejects an invalid year', async () => {
+  const { req, res } = makeMocks(validHistoryBody({ year: 3000 }));
+  await historyHandler(req, res);
+  assert.equal(res._status, 400);
+});
+
+test('events endpoint returns exactly seven validated events', async () => {
+  const payload = validEventsPayload();
+  globalThis.fetch = async (_url, options) => {
+    const forwarded = JSON.parse(options.body);
+    assert.match(forwarded.messages[0].content, /exactly seven/i);
+    assert.match(forwarded.messages[0].content, /territorial control/i);
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ content: [{ text: JSON.stringify(payload) }] }),
+    };
+  };
+
+  const { req, res } = makeMocks({ year: 2020 });
+  await eventsHandler(req, res);
+  assert.equal(res._status, 200);
+  assert.deepEqual(res._body, payload);
+});
+
+test('events endpoint rejects year zero and non-POST requests', async () => {
+  const zero = makeMocks({ year: 0 });
+  await eventsHandler(zero.req, zero.res);
+  assert.equal(zero.res._status, 400);
+
+  const get = makeMocks({}, 'GET');
+  await eventsHandler(get.req, get.res);
+  assert.equal(get.res._status, 405);
+});
+
+test('events endpoint rejects malformed model output', async () => {
   globalThis.fetch = async () => ({
+    ok: true,
     status: 200,
-    json:   async () => ({ candidates: [] }),
+    json: async () => ({
+      content: [{ text: JSON.stringify({ selection_note: 'Incomplete', events: [] }) }],
+    }),
   });
 
-  const { req, res } = makeMocks({ payload: msgOf(3500) });
-  await handler(req, res);
-
-  assert.notEqual(res._status, 400, 'Should not be rejected with 400');
-  assert.notEqual(res._status, 405, 'Should not be rejected with 405');
-});
-
-test('prompt too short (99 chars) is rejected with 400', async () => {
-  const { req, res } = makeMocks({ payload: msgOf(99) });
-  await handler(req, res);
-
-  assert.equal(res._status, 400);
-});
-
-test('prompt too long (50001 chars) is rejected with 400', async () => {
-  const { req, res } = makeMocks({ payload: msgOf(50001) });
-  await handler(req, res);
-
-  assert.equal(res._status, 400);
-});
-
-test('missing contents array is rejected with 400', async () => {
-  const { req, res } = makeMocks({});
-  await handler(req, res);
-
-  assert.equal(res._status, 400);
-});
-
-test('GET request is rejected with 405', async () => {
-  const { req, res } = makeMocks({}, 'GET');
-  await handler(req, res);
-
-  assert.equal(res._status, 405);
+  const { req, res } = makeMocks({ year: 2020 });
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    await eventsHandler(req, res);
+  } finally {
+    console.error = originalConsoleError;
+  }
+  assert.equal(res._status, 500);
+  assert.equal(res._body.error, 'Could not generate key events');
 });

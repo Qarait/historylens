@@ -30,6 +30,7 @@ const CONFIG = {
   // To test: check benchmark_results for parse timeouts.
   maxOutputTokens:    2800,
   apiEndpoint:        '/api/history',
+  eventsEndpoint:     '/api/events',
   hookCycleInterval:  5000,   // ms between landing hook rotations
   loadingMsgInterval: 2800,   // ms between loading status messages
   cacheEnabled:       true,   // in-memory cache for session
@@ -144,6 +145,7 @@ const SURPRISE_POOL = [
 
 /* ── STATE ───────────────────────────────────────────────────────────────── */
 const cache          = new Map();       // year (int) → parsed API response
+const eventsCache    = new Map();       // year (int) → key events response
 const searchHistory  = [];              // [{ year, era }]
 let compareMode      = false;
 let loadingActive     = false;
@@ -545,6 +547,7 @@ function initResultsContainer(year) {
   document.getElementById('hookText').innerHTML = '';
   document.getElementById('results').classList.add('active');
   document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
+  renderKeyEventsControls([year]);
   
   // Scroll to results once they start appearing
   setTimeout(() => {
@@ -1008,6 +1011,7 @@ function renderSingle(year, data) {
   if (data.cross_region) {
     output.appendChild(buildCrossRegionBlock(data.cross_region));
   }
+  renderKeyEventsControls([year]);
 
   // Show feedback bar and reset its state
   const feedbackBar = document.getElementById('feedbackBar');
@@ -1054,6 +1058,7 @@ function renderCompare(year1, data1, year2, data2) {
     wrapper.appendChild(block);
   }
   output.appendChild(wrapper);
+  renderKeyEventsControls([year1, year2]);
 
   addToTimeline(year1, data1.era_description || '');
   addToTimeline(year2, data2.era_description || '');
@@ -1063,6 +1068,201 @@ function renderCompare(year1, data1, year2, data2) {
     const el = document.getElementById('results');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 300);
+}
+
+/* ── KEY EVENTS ──────────────────────────────────────────────────────────── */
+function renderKeyEventsControls(years) {
+  const output = document.getElementById('keyEventsOutput');
+  output.innerHTML = '';
+  output.className = years.length > 1 ? 'key-events-output is-compare' : 'key-events-output';
+
+  for (const year of years) {
+    const section = document.createElement('section');
+    section.className = 'key-events-panel';
+    section.dataset.year = String(year);
+
+    const intro = document.createElement('div');
+    intro.className = 'key-events-intro';
+
+    const copy = document.createElement('div');
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'key-events-eyebrow';
+    eyebrow.textContent = years.length > 1 ? formatYear(year) : 'Go Beyond the Dashboard';
+    const title = document.createElement('h2');
+    title.className = 'key-events-title';
+    title.textContent = `7 Key Events of ${formatYear(year)}`;
+    const description = document.createElement('p');
+    description.className = 'key-events-description';
+    description.textContent = 'Explore major events that may sit outside the regional summary, selected for lasting political, social, scientific, economic, or cultural impact.';
+    copy.append(eyebrow, title, description);
+
+    const button = document.createElement('button');
+    button.className = 'key-events-btn';
+    button.type = 'button';
+    button.setAttribute('aria-expanded', 'false');
+    button.textContent = 'View 7 Key Events';
+    button.addEventListener('click', () => toggleKeyEvents(year, section, button));
+
+    intro.append(copy, button);
+    section.appendChild(intro);
+
+    const body = document.createElement('div');
+    body.className = 'key-events-body';
+    section.appendChild(body);
+    output.appendChild(section);
+  }
+}
+
+async function toggleKeyEvents(year, section, button) {
+  const body = section.querySelector('.key-events-body');
+  const isOpen = section.classList.contains('open');
+
+  if (isOpen) {
+    section.classList.remove('open');
+    button.setAttribute('aria-expanded', 'false');
+    button.textContent = 'View 7 Key Events';
+    return;
+  }
+
+  section.classList.add('open');
+  button.setAttribute('aria-expanded', 'true');
+  button.textContent = 'Hide Key Events';
+
+  if (eventsCache.has(year)) {
+    renderKeyEventsList(body, eventsCache.get(year));
+    return;
+  }
+
+  renderKeyEventsLoading(body, year);
+  button.disabled = true;
+
+  try {
+    const data = await fetchKeyEvents(year);
+    eventsCache.set(year, data);
+    renderKeyEventsList(body, data);
+  } catch (err) {
+    renderKeyEventsError(body, year, err);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function fetchKeyEvents(year) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const response = await fetch(CONFIG.eventsEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({ year }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `API ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data || !Array.isArray(data.events) || data.events.length !== 7) {
+      throw new Error('Unexpected key events response');
+    }
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('The request timed out.');
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function renderKeyEventsLoading(container, year) {
+  container.innerHTML = '';
+  const loading = document.createElement('div');
+  loading.className = 'key-events-loading';
+  loading.innerHTML = `
+    <span class="key-events-spinner" aria-hidden="true"></span>
+    <span>Identifying globally significant events from ${esc(formatYear(year))}...</span>`;
+  container.appendChild(loading);
+}
+
+function renderKeyEventsList(container, data) {
+  container.innerHTML = '';
+
+  const note = document.createElement('p');
+  note.className = 'key-events-note';
+  note.textContent = data.selection_note || 'Selected for historical consequence and geographic breadth.';
+  container.appendChild(note);
+
+  const list = document.createElement('ol');
+  list.className = 'key-events-list';
+
+  data.events.forEach((event, index) => {
+    const item = document.createElement('li');
+    item.className = 'key-event-card';
+
+    const number = document.createElement('div');
+    number.className = 'key-event-number';
+    number.textContent = String(index + 1).padStart(2, '0');
+
+    const content = document.createElement('div');
+    content.className = 'key-event-content';
+
+    const meta = document.createElement('div');
+    meta.className = 'key-event-meta';
+    for (const value of [event.date, event.location, event.category]) {
+      if (!value) continue;
+      const chip = document.createElement('span');
+      chip.textContent = value;
+      meta.appendChild(chip);
+    }
+
+    const title = document.createElement('h3');
+    title.className = 'key-event-title';
+    title.textContent = event.title || 'Untitled event';
+
+    const summary = document.createElement('p');
+    summary.className = 'key-event-summary';
+    summary.textContent = event.summary || '';
+
+    const significance = document.createElement('p');
+    significance.className = 'key-event-significance';
+    const label = document.createElement('strong');
+    label.textContent = 'Why it mattered: ';
+    significance.append(label, document.createTextNode(event.significance || ''));
+
+    content.append(meta, title, summary, significance);
+    item.append(number, content);
+    list.appendChild(item);
+  });
+
+  container.appendChild(list);
+}
+
+function renderKeyEventsError(container, year, err) {
+  container.innerHTML = '';
+  const error = document.createElement('div');
+  error.className = 'key-events-error';
+  const message = document.createElement('span');
+  message.textContent = err.message || 'Could not load key events.';
+
+  const retry = document.createElement('button');
+  retry.type = 'button';
+  retry.textContent = 'Try again';
+  retry.addEventListener('click', async () => {
+    renderKeyEventsLoading(container, year);
+    try {
+      const data = await fetchKeyEvents(year);
+      eventsCache.set(year, data);
+      renderKeyEventsList(container, data);
+    } catch (retryErr) {
+      renderKeyEventsError(container, year, retryErr);
+    }
+  });
+
+  error.append(message, retry);
+  container.appendChild(error);
 }
 
 /* ── CARD BUILDER ────────────────────────────────────────────────────────── */
@@ -1628,6 +1828,7 @@ function hideResults() {
     document.getElementById('signalsBar').classList.remove('visible');
     document.getElementById('hookMoment').classList.remove('visible');
     document.getElementById('feedbackBar').style.display = 'none';
+    document.getElementById('keyEventsOutput').innerHTML = '';
   }, 200);
 }
 
