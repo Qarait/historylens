@@ -94,6 +94,7 @@ test('events endpoint returns exactly seven validated events', async () => {
     assert.match(forwarded.messages[0].content, /exactly seven/i);
     assert.match(forwarded.messages[0].content, /territorial control/i);
     assert.match(forwarded.messages[0].content, /2019 CE and 2021 CE/i);
+    assert.match(forwarded.messages[0].content, /Myanmar's military coup/i);
     assert.equal(forwarded.temperature, 0);
     return {
       ok: true,

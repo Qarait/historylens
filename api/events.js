@@ -96,6 +96,7 @@ function getKeyEventsPrompt(year) {
   const nextYear = year === -1 ? '1 CE' : year < 0
     ? `${Math.abs(year - 1)} BCE`
     : `${year + 1} CE`;
+  const yearSpecificGuardrails = getYearSpecificGuardrails(year);
 
   return `You are a careful world historian. Identify exactly seven key events or developments that occurred during ${yearLabel}.
 
@@ -108,6 +109,7 @@ SELECTION RULES:
 - Every event must have occurred, begun, ended, or reached a decisive turning point during ${yearLabel}.
 - Exclude events from adjacent years, especially ${previousYear} and ${nextYear}. Do not merge a ${yearLabel} precursor with an event or consequence that actually occurred in another year.
 - Before returning the JSON, silently verify the historical year of every event title. If the exact year is uncertain, replace the event.
+${yearSpecificGuardrails}
 - Distinguish confirmed fact from interpretation. Do not invent dates, casualties, quotations, or citations.
 - Keep the summary factual and the significance analytical.
 
@@ -130,6 +132,13 @@ HARD CONSTRAINTS:
 - Exactly seven events.
 - All six fields must be non-empty strings for every event.
 - Return JSON only, with no markdown fences or commentary.`;
+}
+
+function getYearSpecificGuardrails(year) {
+  if (year === 2020) {
+    return `- Chronology guardrail for 2020: Myanmar's military coup, the U.S. Capitol attack, and the U.S. presidential transfer of power occurred in 2021. Do not include or imply those events. The November 2020 U.S. election itself is eligible.`;
+  }
+  return '';
 }
 
 function validateEventsResponse(data) {
