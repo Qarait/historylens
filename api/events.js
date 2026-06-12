@@ -64,6 +64,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 2400,
+        temperature: 0,
         messages: [{ role: 'user', content: getKeyEventsPrompt(year) }],
       }),
     });
@@ -89,6 +90,12 @@ export default async function handler(req, res) {
 
 function getKeyEventsPrompt(year) {
   const yearLabel = year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`;
+  const previousYear = year === 1 ? '1 BCE' : year < 0
+    ? `${Math.abs(year + 1)} BCE`
+    : `${year - 1} CE`;
+  const nextYear = year === -1 ? '1 CE' : year < 0
+    ? `${Math.abs(year - 1)} BCE`
+    : `${year + 1} CE`;
 
   return `You are a careful world historian. Identify exactly seven key events or developments that occurred during ${yearLabel}.
 
@@ -99,6 +106,8 @@ SELECTION RULES:
 - Include a major regional conflict when it materially changed borders, sovereignty, security, or the balance of power, even if it received less global coverage.
 - Aim for geographic breadth. Use no more than two events from one country and no more than three from one broad region.
 - Every event must have occurred, begun, ended, or reached a decisive turning point during ${yearLabel}.
+- Exclude events from adjacent years, especially ${previousYear} and ${nextYear}. Do not merge a ${yearLabel} precursor with an event or consequence that actually occurred in another year.
+- Before returning the JSON, silently verify the historical year of every event title. If the exact year is uncertain, replace the event.
 - Distinguish confirmed fact from interpretation. Do not invent dates, casualties, quotations, or citations.
 - Keep the summary factual and the significance analytical.
 

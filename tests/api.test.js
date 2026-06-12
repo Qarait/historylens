@@ -93,6 +93,8 @@ test('events endpoint returns exactly seven validated events', async () => {
     const forwarded = JSON.parse(options.body);
     assert.match(forwarded.messages[0].content, /exactly seven/i);
     assert.match(forwarded.messages[0].content, /territorial control/i);
+    assert.match(forwarded.messages[0].content, /2019 CE and 2021 CE/i);
+    assert.equal(forwarded.temperature, 0);
     return {
       ok: true,
       status: 200,
