@@ -6,6 +6,7 @@ delete process.env.NODE_ENV;
 
 const { default: historyHandler } = await import('../api/history.js');
 const { default: eventsHandler } = await import('../api/events.js');
+const { default: checkEventHandler } = await import('../api/check-event.js');
 const { enforceRateLimit } = await import('../api/_lib/request.js');
 const originalFetch = globalThis.fetch;
 
@@ -182,6 +183,46 @@ test('events endpoint fails clearly when chronology is unavailable', async () =>
 
   assert.equal(res._status, 503);
   assert.match(res._body.error, /sources are temporarily unavailable/i);
+});
+
+test('event checker finds a chronology match without an AI request', async () => {
+  const wikitext = [
+    '=== September ===',
+    '* [[September 27]] - The [[Second Nagorno-Karabakh War]] begins between Armenia and Azerbaijan.',
+    '=== November ===',
+    '* [[November 10]] - The [[2020 Nagorno-Karabakh ceasefire agreement]] ends major fighting.',
+  ].join('\n');
+  const responses = [
+    jsonResponse({
+      parse: {
+        title: '2019',
+        sections: [{ index: '2', line: 'Events' }],
+      },
+    }),
+    jsonResponse({ parse: { wikitext } }),
+  ];
+  let fetchCount = 0;
+  globalThis.fetch = async url => {
+    fetchCount++;
+    assert.match(String(url), /wikipedia\.org/);
+    return responses.shift();
+  };
+
+  const { req, res } = makeMocks({ year: 2019, query: 'Nagorno-Karabakh War' });
+  await checkEventHandler(req, res);
+
+  assert.equal(res._status, 200);
+  assert.equal(res._body.found, true);
+  assert.equal(res._body.matches[0].sourceTitle, 'Second Nagorno-Karabakh War');
+  assert.match(res._body.matches[0].sourceUrl, /Second_Nagorno-Karabakh_War/);
+  assert.equal(fetchCount, 2);
+});
+
+test('event checker validates query length', async () => {
+  const { req, res } = makeMocks({ year: 2020, query: 'x' });
+  await checkEventHandler(req, res);
+  assert.equal(res._status, 400);
+  assert.match(res._body.error, /between 3 and 120/i);
 });
 
 test('production origin validation rejects lookalike domains', async () => {

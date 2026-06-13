@@ -26,6 +26,7 @@ export default [
         console: 'readonly',
         HistoryLensApi: 'readonly',
         HistoryLensKeyEvents: 'readonly',
+        HistoryLensEventChecker: 'readonly',
       },
     },
     rules: {

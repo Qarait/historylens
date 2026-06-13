@@ -2,6 +2,7 @@ import { wikipediaYearTitle } from './config.js';
 
 const WIKIPEDIA_API = 'https://en.wikipedia.org/w/api.php';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_CACHE_YEARS = 32;
 const MAX_SNIPPETS = 72;
 const MAX_CONTEXT_CHARS = 36000;
 const cache = new Map();
@@ -42,16 +43,37 @@ export async function getYearGrounding(year) {
   const value = {
     context,
     allowedTitles,
+    entries: candidates.map(({ month, text, sourceTitles }) => ({
+      month,
+      text,
+      sourceTitles,
+    })),
     yearPageTitle: pageTitle,
     yearPageUrl: wikipediaArticleUrl(pageTitle),
     sourceName: 'Wikipedia contributors',
   };
+  if (cache.size >= MAX_CACHE_YEARS) {
+    cache.delete(cache.keys().next().value);
+  }
   cache.set(year, { createdAt: Date.now(), value });
   return value;
 }
 
 export function wikipediaArticleUrl(title) {
   return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
+}
+
+export function findChronologyMatches(entries, query, limit = 3) {
+  const normalizedQuery = normalizeSearchText(query);
+  const queryTokens = searchTokens(normalizedQuery);
+  if (!normalizedQuery || queryTokens.length === 0) return [];
+
+  return entries
+    .map(entry => scoreChronologyEntry(entry, normalizedQuery, queryTokens))
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ score: _score, ...match }) => match);
 }
 
 function parseEventCandidates(wikitext) {
@@ -96,6 +118,58 @@ function parseEventCandidates(wikitext) {
     });
   }
   return candidates;
+}
+
+function scoreChronologyEntry(entry, normalizedQuery, queryTokens) {
+  const normalizedText = normalizeSearchText(entry.text);
+  const titles = entry.sourceTitles.map(title => ({
+    title,
+    normalized: normalizeSearchText(title),
+  }));
+  const searchable = `${normalizedText} ${titles.map(item => item.normalized).join(' ')}`;
+  if (!queryTokens.every(token => searchable.includes(token))) return null;
+
+  let score = normalizedText.includes(normalizedQuery) ? 20 : 0;
+  for (const token of queryTokens) {
+    if (titles.some(item => item.normalized.includes(token))) score += 8;
+    if (normalizedText.includes(token)) score += 3;
+  }
+
+  const source = titles
+    .map(item => ({
+      ...item,
+      score: queryTokens.reduce(
+        (total, token) => total + (item.normalized.includes(token) ? 1 : 0),
+        0
+      ),
+    }))
+    .sort((a, b) => b.score - a.score)[0];
+
+  return {
+    score,
+    month: entry.month,
+    excerpt: entry.text.replace(/\s*\{source:\s*[^}]+\}/g, '').trim(),
+    sourceTitle: source.title,
+    sourceUrl: wikipediaArticleUrl(source.title),
+  };
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function searchTokens(normalizedQuery) {
+  const generic = new Set([
+    'a', 'an', 'and', 'battle', 'conflict', 'event', 'in', 'of', 'the', 'war',
+  ]);
+  return [...new Set(
+    normalizedQuery.split(' ').filter(token => token.length >= 2 && !generic.has(token))
+  )];
 }
 
 function isCitationTitle(title) {

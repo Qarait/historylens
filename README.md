@@ -7,7 +7,7 @@ Enter a year. See what was happening simultaneously across Europe, Asia, the Ame
 **Live Demo:** [historylens-psi.vercel.app](https://historylens-psi.vercel.app)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-c9a84c.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.1.0-16a085.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-16a085.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 ***
@@ -23,6 +23,7 @@ For any year from ancient history to the present, it produces:
 * **Global signals**: a structured readout of war intensity, political fragmentation, economic pressure, trade activity, and ideological tension
 * **Cross regional contrast**: an analytical statement connecting the regions, with specific bilateral tension notes
 * **Source grounded key events**: seven additional events retrieved on demand from a verified year chronology, each with a source link
+* **Event chronology check**: search for an event that may be missing from the dashboard and verify whether it appears in that year's source chronology
 
 ***
 
@@ -78,7 +79,8 @@ historylens/
 │   ├── styles.css      # All CSS — design tokens, components, responsive rules
 │   ├── app.js          # Application state and dashboard rendering
 │   ├── history-api.js  # API client and streaming parser
-│   └── key-events.js   # Source grounded event panel
+│   ├── key-events.js   # Source grounded event panel
+│   └── event-checker.js # On-demand chronology search
 ├── e2e/                # Playwright desktop and mobile tests
 ├── README.md
 ├── CHANGELOG.md

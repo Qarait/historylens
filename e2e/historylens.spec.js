@@ -89,6 +89,31 @@ test.beforeEach(async ({ page }) => {
     contentType: 'application/json',
     body: JSON.stringify(eventsData),
   }));
+
+  await page.route('**/api/check-event', async route => {
+    const requestBody = route.request().postDataJSON();
+    expect(Object.keys(requestBody).sort()).toEqual(['query', 'year']);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        query: requestBody.query,
+        year_label: '2020 CE',
+        found: true,
+        matches: [{
+          month: 'September',
+          excerpt: 'The Second Nagorno-Karabakh War begins between Armenia and Azerbaijan.',
+          sourceTitle: 'Second Nagorno-Karabakh War',
+          sourceUrl: 'https://en.wikipedia.org/wiki/Second_Nagorno-Karabakh_War',
+        }],
+        explanation: 'This event appears in the year chronology. The main dashboard is selective.',
+        grounding: {
+          name: 'Wikipedia contributors',
+          url: 'https://en.wikipedia.org/wiki/2020',
+        },
+      }),
+    });
+  });
 });
 
 test('explores a year and shows cited key events', async ({ page }) => {
@@ -103,6 +128,11 @@ test('explores a year and shows cited key events', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Second Nagorno-Karabakh War' })).toBeVisible();
   await expect(page.locator('.key-event-source').first()).toBeVisible();
   await expect(page.locator('.key-events-attribution')).toContainText('Wikipedia contributors');
+
+  await page.locator('.event-check-form input').fill('Nagorno-Karabakh War');
+  await page.locator('.event-check-form button').click();
+  await expect(page.locator('.event-check-verdict')).toHaveText('Found in chronology');
+  await expect(page.locator('.event-check-match')).toContainText('Second Nagorno-Karabakh War');
 });
 
 test('keeps the key events panel usable on a narrow viewport', async ({ page }) => {
@@ -111,6 +141,9 @@ test('keeps the key events panel usable on a narrow viewport', async ({ page }) 
   await page.locator('#searchBtn').click();
   await page.locator('.key-events-btn').click();
   await expect(page.locator('.key-event-card')).toHaveCount(7);
+  await page.locator('.event-check-form input').fill('Nagorno-Karabakh War');
+  await page.locator('.event-check-form button').click();
+  await expect(page.locator('.event-check-match')).toBeVisible();
 
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth

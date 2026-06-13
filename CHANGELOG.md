@@ -6,9 +6,11 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.3.0] — 2026-06-13
 
 ### Added
+- On-demand event chronology checker for investigating events omitted from the selective dashboard.
+- Deterministic chronology matching with no additional AI request, plus session caching in the browser.
 - On-demand "7 Key Events" panels for single-year and comparison results.
 - Globally balanced event selection with dates, locations, categories, summaries, and historical significance.
 - A dedicated server-side `/api/events` endpoint with input validation, rate limiting, response validation, and browser session caching.

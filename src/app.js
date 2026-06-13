@@ -541,6 +541,7 @@ function initResultsContainer(year) {
   document.getElementById('results').classList.add('active');
   document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
   HistoryLensKeyEvents.renderControls([year], formatYear);
+  HistoryLensEventChecker.renderControls([year], formatYear);
   
   // Scroll to results once they start appearing
   setTimeout(() => {
@@ -672,6 +673,7 @@ function renderSingle(year, data) {
   }
   renderHistoryGrounding([data.__grounding]);
   HistoryLensKeyEvents.renderControls([year], formatYear);
+  HistoryLensEventChecker.renderControls([year], formatYear);
 
   // Show feedback bar and reset its state
   const feedbackBar = document.getElementById('feedbackBar');
@@ -720,6 +722,7 @@ function renderCompare(year1, data1, year2, data2) {
   }
   output.appendChild(wrapper);
   HistoryLensKeyEvents.renderControls([year1, year2], formatYear);
+  HistoryLensEventChecker.renderControls([year1, year2], formatYear);
 
   addToTimeline(year1, data1.era_description || '');
   addToTimeline(year2, data2.era_description || '');
@@ -1315,6 +1318,7 @@ function hideResults() {
   renderHistoryGrounding([]);
   document.getElementById('feedbackBar').style.display = 'none';
   document.getElementById('keyEventsOutput').innerHTML = '';
+  document.getElementById('eventCheckOutput').innerHTML = '';
 }
 
 /* ── TOAST ───────────────────────────────────────────────────────────────── */
