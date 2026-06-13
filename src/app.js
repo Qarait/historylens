@@ -743,6 +743,17 @@ function renderHistoryGrounding(items) {
   container.classList.toggle('visible', unique.length > 0);
   if (unique.length === 0) return;
 
+  const curated = unique.filter(item => item.curated);
+  if (curated.length > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'curated-badge';
+    const reviewedDates = [...new Set(curated.map(item => item.reviewedAt).filter(Boolean))];
+    badge.textContent = reviewedDates.length === 1
+      ? `Curated edition · reviewed ${reviewedDates[0]}`
+      : 'Curated editions';
+    container.append(badge, document.createTextNode(' '));
+  }
+
   container.append('Grounded chronology: ');
   unique.forEach((item, index) => {
     if (index > 0) container.append(' · ');

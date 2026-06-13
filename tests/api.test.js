@@ -24,9 +24,13 @@ function makeMocks(body, method = 'POST') {
     _status: null,
     _body: null,
     _headers: {},
+    _chunks: [],
+    _ended: false,
     status(code) { this._status = code; return this; },
     json(data) { this._body = data; return this; },
     setHeader(key, value) { this._headers[key] = value; },
+    write(chunk) { this._chunks.push(String(chunk)); return true; },
+    end() { this._ended = true; return this; },
   };
   return { req, res };
 }
@@ -84,21 +88,21 @@ afterEach(() => {
 });
 
 test('history endpoint owns prompt and model settings', async () => {
-  const responses = groundingResponses(2020);
+  const responses = groundingResponses(2021);
   globalThis.fetch = async (url, options = {}) => {
     if (String(url).includes('wikipedia.org')) return responses.shift();
 
     const forwarded = JSON.parse(options.body);
     assert.equal(forwarded.model, 'claude-haiku-4-5-20251001');
     assert.equal(forwarded.temperature, 0);
-    assert.match(forwarded.messages[0].content, /Year: 2020 CE/);
+    assert.match(forwarded.messages[0].content, /Year: 2021 CE/);
     assert.match(forwarded.messages[0].content, /Source Event 1/);
     assert.doesNotMatch(forwarded.messages[0].content, /malicious client prompt/);
     return jsonResponse({ content: [{ text: '{}' }] });
   };
 
   const { req, res } = makeMocks({
-    year: 2020,
+    year: 2021,
     messages: [{ role: 'user', content: 'malicious client prompt' }],
     model: 'untrusted-model',
   });
@@ -106,6 +110,41 @@ test('history endpoint owns prompt and model settings', async () => {
 
   assert.equal(res._status, 200);
   assert.equal(res._headers['X-HistoryLens-Grounding'], 'wikipedia');
+});
+
+test('curated 2020 returns without Anthropic or Wikipedia access', async () => {
+  delete process.env.ANTHROPIC_API_KEY;
+  globalThis.fetch = async () => {
+    throw new Error('Curated years must not make external requests');
+  };
+
+  const { req, res } = makeMocks({ year: 2020, stream: false });
+  await historyHandler(req, res);
+
+  assert.equal(res._status, 200);
+  assert.equal(res._headers['X-HistoryLens-Curated'], 'true');
+  assert.equal(res._headers['X-HistoryLens-Reviewed-At'], '2026-06-13');
+  const data = JSON.parse(res._body.content[0].text);
+  assert.equal(data.regions.asia.events[1].title, 'Second Nagorno-Karabakh War');
+  assert.equal(Object.keys(data.regions).length, 4);
+  for (const region of Object.values(data.regions)) {
+    assert.equal(region.events.length, 3);
+    assert.equal(region.events.filter(event => event.rank === 'primary').length, 1);
+  }
+});
+
+test('curated 2020 preserves the browser streaming protocol', async () => {
+  const { req, res } = makeMocks({ year: 2020, stream: true });
+  await historyHandler(req, res);
+
+  assert.equal(res._status, 200);
+  assert.equal(res._headers['Content-Type'], 'text/event-stream');
+  assert.equal(res._ended, true);
+  const line = res._chunks.join('').trim().replace(/^data:\s*/, '');
+  const event = JSON.parse(line);
+  const data = JSON.parse(event.delta.text);
+  assert.equal(data.year_label, '2020 CE');
+  assert.equal(data.regions.asia.events[1].title, 'Second Nagorno-Karabakh War');
 });
 
 test('history endpoint rejects invalid year and method', async () => {

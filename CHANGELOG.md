@@ -6,6 +6,18 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.4.0] — 2026-06-13
+
+### Added
+- Curated verified-year infrastructure with an API fast path that bypasses external retrieval and AI generation.
+- A reviewed 2020 edition that explicitly includes the Second Nagorno-Karabakh War.
+- Compact review metadata in the results attribution.
+
+### Performance
+- Curated responses use the existing response schema and streaming protocol, so no alternate rendering system or additional browser request is required.
+
+---
+
 ## [1.3.0] — 2026-06-13
 
 ### Added

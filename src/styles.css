@@ -327,6 +327,7 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; padding: 0.1
 .history-grounding.visible { display: block; }
 .history-grounding a { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
 .history-grounding a:hover { color: var(--gold); }
+.curated-badge { display: inline-flex; align-items: center; margin-right: 0.35rem; padding: 0.14rem 0.45rem; border: 1px solid rgba(80,208,176,0.3); border-radius: 20px; background: rgba(80,208,176,0.08); color: #50d0b0; font-weight: 700; letter-spacing: 0.03em; }
 
 /* Signals */
 .signals-bar { max-width: 1300px; margin: 0 auto 1.2rem; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1.2rem; display: none; align-items: center; gap: 1.3rem; flex-wrap: wrap; }

@@ -186,6 +186,8 @@
     return {
       name: response.headers.get('X-HistoryLens-Source-Name') || 'Wikipedia contributors',
       url,
+      curated: response.headers.get('X-HistoryLens-Curated') === 'true',
+      reviewedAt: response.headers.get('X-HistoryLens-Reviewed-At') || '',
     };
   }
 

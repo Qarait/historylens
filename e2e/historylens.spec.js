@@ -57,18 +57,26 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/history', async route => {
     const requestBody = route.request().postDataJSON();
     expect(Object.keys(requestBody).sort()).toEqual(['stream', 'year']);
-    expect(requestBody.year).toBe(2020);
 
-    const text = JSON.stringify(historyData);
+    const responseData = {
+      ...historyData,
+      year_label: `${requestBody.year} CE`,
+    };
+    const text = JSON.stringify(responseData);
+    const historyHeaders = {
+      'X-HistoryLens-Grounding': 'wikipedia',
+      'X-HistoryLens-Source-Name': 'Wikipedia contributors',
+      'X-HistoryLens-Source-Url': `https://en.wikipedia.org/wiki/${requestBody.year}`,
+      ...(requestBody.year === 2020 ? {
+        'X-HistoryLens-Curated': 'true',
+        'X-HistoryLens-Reviewed-At': '2026-06-13',
+      } : {}),
+    };
     if (requestBody.stream) {
       await route.fulfill({
         status: 200,
         contentType: 'text/event-stream',
-        headers: {
-          'X-HistoryLens-Grounding': 'wikipedia',
-          'X-HistoryLens-Source-Name': 'Wikipedia contributors',
-          'X-HistoryLens-Source-Url': 'https://en.wikipedia.org/wiki/2020',
-        },
+        headers: historyHeaders,
         body: `data: ${JSON.stringify({
           type: 'content_block_delta',
           delta: { type: 'text_delta', text },
@@ -80,6 +88,7 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: historyHeaders,
       body: JSON.stringify({ content: [{ text }] }),
     });
   });
@@ -122,6 +131,7 @@ test('explores a year and shows cited key events', async ({ page }) => {
   await page.locator('#searchBtn').click();
 
   await expect(page.locator('.region-card')).toHaveCount(4);
+  await expect(page.locator('.curated-badge')).toContainText('reviewed 2026-06-13');
   await expect(page.locator('#historyGrounding')).toContainText('Wikipedia contributors');
   await page.locator('.key-events-btn').click();
   await expect(page.locator('.key-event-card')).toHaveCount(7);
@@ -149,4 +159,17 @@ test('keeps the key events panel usable on a narrow viewport', async ({ page }) 
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth
   );
   expect(hasOverflow).toBe(false);
+});
+
+test('compares a curated year with a generated year', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#compareTrack').click();
+  await page.locator('#yearInput').fill('2020');
+  await page.locator('#yearInput2').fill('2021');
+  await page.locator('#searchBtn').click();
+
+  await expect(page.locator('.compare-block')).toHaveCount(2);
+  await expect(page.locator('.region-card')).toHaveCount(8);
+  await expect(page.locator('.curated-badge')).toHaveCount(1);
+  await expect(page.locator('#historyGrounding a')).toHaveCount(2);
 });

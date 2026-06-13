@@ -12,6 +12,7 @@ import {
 import { buildHistoryPrompt } from './_lib/prompts.js';
 import { enforceOrigin, enforceRateLimit } from './_lib/request.js';
 import { getYearGrounding } from './_lib/wikipedia.js';
+import { getCuratedYear } from './_data/curated-years.js';
 
 export default async function handler(req, res) {
   if (!enforceOrigin(req, res)) return;
@@ -25,6 +26,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid historical year.' });
   }
   const stream = req.body?.stream === true;
+  const curated = getCuratedYear(year);
+  if (curated) return sendCuratedResponse(res, curated, stream);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -87,6 +90,32 @@ export default async function handler(req, res) {
     console.error('[History API]', error);
     return res.status(500).json({ error: 'History generation failed' });
   }
+}
+
+function sendCuratedResponse(res, curated, stream) {
+  const text = JSON.stringify(curated.data);
+  res.setHeader?.('X-HistoryLens-Grounding', 'wikipedia');
+  res.setHeader?.('X-HistoryLens-Source-Name', curated.sourceName);
+  res.setHeader?.('X-HistoryLens-Source-Url', curated.sourceUrl);
+  res.setHeader?.('X-HistoryLens-Curated', 'true');
+  res.setHeader?.('X-HistoryLens-Reviewed-At', curated.reviewedAt);
+  res.setHeader?.('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+
+  if (!stream) {
+    return res.status(200).json({
+      content: [{ type: 'text', text }],
+      stop_reason: 'end_turn',
+    });
+  }
+
+  res.status?.(200);
+  res.setHeader?.('Content-Type', 'text/event-stream');
+  res.setHeader?.('Content-Encoding', 'none');
+  res.write(`data: ${JSON.stringify({
+    type: 'content_block_delta',
+    delta: { type: 'text_delta', text },
+  })}\n\n`);
+  return res.end();
 }
 
 function normalizeProviderError(data) {
