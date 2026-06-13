@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230d0d0f'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23c9a84c' stroke-width='5'/%3E%3Cpath d='M43 43l12 12' stroke='%23c9a84c' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E"/>
   <meta name="description" content="HistoryLens — Understand what the world looked like in any year. Compare regions, detect patterns, and understand global shifts — not just isolated events."/>
   <meta property="og:title"       content="HistoryLens — Comparative World History Explorer"/>
   <meta property="og:description" content="Enter any year. See what was happening simultaneously across Europe, Asia, the Americas, and Africa."/>
@@ -36,7 +37,7 @@
     <li><a href="https://github.com/Qarait/historylens" target="_blank" rel="noopener">GitHub ↗</a></li>
   </ul>
 
-  <button class="nav-mobile-btn" id="mobileMenuBtn" aria-label="Open menu" aria-expanded="false">☰</button>
+  <button type="button" class="nav-mobile-btn" id="mobileMenuBtn" aria-label="Open menu" aria-expanded="false">☰</button>
 </nav>
 
 <!-- ── Mobile nav drawer ── -->
@@ -83,7 +84,7 @@
       </div>
       <div class="lh-footer">
         <div class="lh-cycle-dots" id="lhDots"></div>
-        <button class="lh-try-btn" id="lhTryBtn">Run this year live →</button>
+        <button type="button" class="lh-try-btn" id="lhTryBtn">Run this year live →</button>
       </div>
     </div>
   </div>
@@ -104,7 +105,7 @@
           aria-labelledby="search-label"
           aria-describedby="search-hint"
         />
-        <button class="search-btn" id="searchBtn" aria-label="Explore this year">
+        <button type="button" class="search-btn" id="searchBtn" aria-label="Explore this year">
           Explore →
         </button>
       </div>
@@ -112,10 +113,10 @@
         <span class="search-hint" id="search-hint">
           Press Enter &nbsp;·&nbsp; <kbd>⌘</kbd><kbd>K</kbd> to focus
         </span>
-        <label class="compare-toggle" title="Compare two years side by side">
-          <div class="toggle-track" id="compareTrack"><div class="toggle-thumb"></div></div>
-          Compare two years
-        </label>
+        <div class="compare-toggle" title="Compare two years side by side">
+          <button type="button" class="toggle-track" id="compareTrack" aria-label="Compare two years" aria-pressed="false"><span class="toggle-thumb"></span></button>
+          <span>Compare two years</span>
+        </div>
       </div>
       <div class="compare-row" id="compareRow">
         <div class="compare-year2-wrap">
@@ -132,23 +133,23 @@
           <div class="compare-label">Year 2</div>
         </div>
       </div>
-      <div class="quick-nav" aria-label="Notable years">
+      <div class="quick-nav" role="navigation" aria-label="Notable years">
         <div class="quick-nav-label">Notable eras</div>
-        <button class="era-btn" data-year="-44">44 BCE</button>
-        <button class="era-btn" data-year="476">476</button>
-        <button class="era-btn" data-year="1066">1066</button>
-        <button class="era-btn" data-year="1215">1215</button>
-        <button class="era-btn" data-year="1347">1347</button>
-        <button class="era-btn" data-year="1492">1492</button>
-        <button class="era-btn" data-year="1776">1776</button>
-        <button class="era-btn" data-year="1821">1821</button>
-        <button class="era-btn" data-year="1865">1865</button>
-        <button class="era-btn" data-year="1914">1914</button>
-        <button class="era-btn" data-year="1945">1945</button>
-        <button class="era-btn" data-year="1969">1969</button>
-        <button class="era-btn" data-year="1989">1989</button>
+        <button type="button" class="era-btn" data-year="-44">44 BCE</button>
+        <button type="button" class="era-btn" data-year="476">476</button>
+        <button type="button" class="era-btn" data-year="1066">1066</button>
+        <button type="button" class="era-btn" data-year="1215">1215</button>
+        <button type="button" class="era-btn" data-year="1347">1347</button>
+        <button type="button" class="era-btn" data-year="1492">1492</button>
+        <button type="button" class="era-btn" data-year="1776">1776</button>
+        <button type="button" class="era-btn" data-year="1821">1821</button>
+        <button type="button" class="era-btn" data-year="1865">1865</button>
+        <button type="button" class="era-btn" data-year="1914">1914</button>
+        <button type="button" class="era-btn" data-year="1945">1945</button>
+        <button type="button" class="era-btn" data-year="1969">1969</button>
+        <button type="button" class="era-btn" data-year="1989">1989</button>
       </div>
-      <button class="surprise-btn" id="surpriseBtn">
+      <button type="button" class="surprise-btn" id="surpriseBtn">
         🎲 Surprise me — take me to a random year in history
       </button>
       <div class="api-key-notice" id="apiKeyNotice">
@@ -160,7 +161,7 @@
   </div>
 
   <!-- Skeleton loading state -->
-  <div id="loadingSection" aria-live="polite" aria-label="Loading historical data">
+  <div id="loadingSection" role="status" aria-live="polite" aria-label="Loading historical data">
     <div class="loading-header">
       <div class="skel-year" aria-hidden="true"></div>
       <div class="skel-sub"  aria-hidden="true"></div>
@@ -197,7 +198,7 @@
       <div class="results-year" id="resultsYear" aria-live="polite"></div>
       <div class="results-era"  id="resultsEra"></div>
       <div class="results-toolbar" role="toolbar" aria-label="Result actions">
-        <button class="tool-btn" id="btnPrint" aria-label="Print results">
+        <button type="button" class="tool-btn" id="btnPrint" aria-label="Print results">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polyline points="6 9 6 2 18 2 18 9"/>
             <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
@@ -205,21 +206,21 @@
           </svg>
           <span>Print / PDF</span>
         </button>
-        <button class="tool-btn" id="btnCopy" aria-label="Copy summary">
+        <button type="button" class="tool-btn" id="btnCopy" aria-label="Copy summary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <rect x="9" y="9" width="13" height="13" rx="2"/>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
           <span>Copy Summary</span>
         </button>
-        <button class="tool-btn" id="btnHistory" aria-label="Search history">
+        <button type="button" class="tool-btn" id="btnHistory" aria-label="Search history">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/>
             <polyline points="12 6 12 12 16 14"/>
           </svg>
           <span>History</span>
         </button>
-        <button class="tool-btn" id="btnShare" aria-label="Share this year">
+        <button type="button" class="tool-btn" id="btnShare" aria-label="Share this year">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="18" cy="5" r="3"/>
             <circle cx="6" cy="12" r="3"/>
@@ -240,9 +241,10 @@
         <div class="gc-text" id="globalContextText"></div>
       </div>
     </div>
+    <div class="history-grounding" id="historyGrounding"></div>
 
     <!-- System signals -->
-    <div class="signals-bar" id="signalsBar" aria-label="Global signals">
+    <div class="signals-bar" id="signalsBar" role="region" aria-label="Global signals">
       <span class="signals-label">Global Signals</span>
       <div class="signals-items" id="signalsItems"></div>
     </div>
@@ -262,9 +264,9 @@
         <strong>Was this historically accurate?</strong> Your feedback helps us improve.
       </div>
       <div class="feedback-btns">
-        <button class="feedback-btn" id="fbPos">👍 Accurate</button>
-        <button class="feedback-btn" id="fbNeg">👎 Issues found</button>
-        <button class="feedback-btn" id="btnReport">✉ Report details</button>
+        <button type="button" class="feedback-btn" id="fbPos">👍 Accurate</button>
+        <button type="button" class="feedback-btn" id="fbNeg">👎 Issues found</button>
+        <button type="button" class="feedback-btn" id="btnReport">✉ Report details</button>
       </div>
     </div>
 
@@ -273,8 +275,8 @@
       <div class="timeline-header">
         <div class="timeline-title">Your Exploration Timeline</div>
         <div class="timeline-actions">
-          <button class="timeline-action-btn" id="btnSaveComp">+ Save comparison</button>
-          <button class="timeline-action-btn" id="btnClearTimeline">Clear</button>
+          <button type="button" class="timeline-action-btn" id="btnSaveComp">+ Save comparison</button>
+          <button type="button" class="timeline-action-btn" id="btnClearTimeline">Clear</button>
         </div>
       </div>
       <div class="timeline-track" id="timelineTrack"></div>
@@ -332,7 +334,7 @@
       </div>
     </div>
     <div class="example-cta">
-      <button id="exampleCta1453">→ Run this year live</button>
+      <button type="button" id="exampleCta1453">→ Run this year live</button>
     </div>
   </div>
 
@@ -495,7 +497,7 @@
   <div class="footer-bottom">
     <div class="footer-meta">
       <span>© 2026 HistoryLens</span>
-      <span class="footer-version">v1.1.0</span>
+      <span class="footer-version">v1.2.0</span>
       <span>MIT License</span>
       <a href="mailto:hello@historylens.app">hello@historylens.app</a>
     </div>
@@ -506,6 +508,8 @@
   </div>
 </footer>
 
+<script src="src/history-api.js"></script>
+<script src="src/key-events.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
  * HistoryLens — app.js
  *
  * Architecture notes:
- *  - CONFIG centralises all tunable values (model, timing, storage keys)
+ *  - CONFIG centralises client timing, range, and storage values
  *  - DOM manipulation uses textContent / createElement to prevent XSS;
  *    innerHTML is only used for static, author-controlled template strings
  *    (never for user input or AI-generated text injected without escaping)
@@ -14,23 +14,7 @@
 'use strict';
 
 /* ── CONFIG ─────────────────────────────────────────────────────────────── */
-/*
- * SETUP: Replace 'YOUR_API_KEY_HERE' below with your Anthropic API key.
- * Get a free key at: https://console.anthropic.com
- *
- * For production / school deployment, move the API call to a backend proxy
- * (Vercel Edge Function, Cloudflare Worker, etc.) so the key is never
- * exposed in client-side code. See README.md for details.
- */
 const CONFIG = {
-  model:              'claude-haiku-4-5-20251001',
-  // maxOutputTokens: DO NOT lower this without testing first.
-  // The 4-region JSON schema produces ~7,800 char responses
-  // requiring ~2,000 tokens. Safe minimum for 4-region schema is 2500.
-  // To test: check benchmark_results for parse timeouts.
-  maxOutputTokens:    2800,
-  apiEndpoint:        '/api/history',
-  eventsEndpoint:     '/api/events',
   hookCycleInterval:  5000,   // ms between landing hook rotations
   loadingMsgInterval: 2800,   // ms between loading status messages
   cacheEnabled:       true,   // in-memory cache for session
@@ -145,7 +129,6 @@ const SURPRISE_POOL = [
 
 /* ── STATE ───────────────────────────────────────────────────────────────── */
 const cache          = new Map();       // year (int) → parsed API response
-const eventsCache    = new Map();       // year (int) → key events response
 const searchHistory  = [];              // [{ year, era }]
 let compareMode      = false;
 let loadingActive     = false;
@@ -316,7 +299,9 @@ function closeMobileNav() {
 /* ── COMPARE TOGGLE ──────────────────────────────────────────────────────── */
 function toggleCompare() {
   compareMode = !compareMode;
-  document.getElementById('compareTrack').classList.toggle('on', compareMode);
+  const track = document.getElementById('compareTrack');
+  track.classList.toggle('on', compareMode);
+  track.setAttribute('aria-pressed', String(compareMode));
   document.getElementById('compareRow').classList.toggle('visible', compareMode);
   document.getElementById('searchBtn').textContent = compareMode ? 'Explore Comparison' : 'Explore →';
   if (compareMode) document.getElementById('yearInput2').focus();
@@ -478,12 +463,17 @@ async function exploreSingle(year) {
   let accumulatedData = { regions: {} };
   
   try {
-    await fetchHistoryStream(year, {
+    await HistoryLensApi.fetchHistoryStream(year, {
+      onGrounding: (grounding) => {
+        accumulatedData.__grounding = grounding;
+        if (hasStartedRendering) renderHistoryGrounding([grounding]);
+      },
       onHeader: (era) => {
         if (!hasStartedRendering) {
           hasStartedRendering = true;
           hideLoading();
           initResultsContainer(year);
+          renderHistoryGrounding([accumulatedData.__grounding]);
         }
         document.getElementById('resultsEra').textContent = era;
         accumulatedData.era_description = era;
@@ -493,6 +483,7 @@ async function exploreSingle(year) {
           hasStartedRendering = true;
           hideLoading();
           initResultsContainer(year);
+          renderHistoryGrounding([accumulatedData.__grounding]);
         }
         document.getElementById('hookText').innerHTML = boldNames(esc(text));
         document.getElementById('hookMoment').classList.toggle('visible', !!text);
@@ -516,6 +507,7 @@ async function exploreSingle(year) {
         accumulatedData.cross_region = crossData;
       },
       onComplete: (fullData) => {
+        fullData.__grounding = accumulatedData.__grounding || null;
         if (CONFIG.cacheEnabled) cache.set(year, fullData);
         addToSearchHistory(year, fullData.era_description || '');
         addToTimeline(year, fullData.era_description || '');
@@ -545,9 +537,10 @@ function initResultsContainer(year) {
   document.getElementById('resultsYear').textContent = formatYear(year);
   document.getElementById('resultsEra').textContent = 'Analyzing...';
   document.getElementById('hookText').innerHTML = '';
+  renderHistoryGrounding([]);
   document.getElementById('results').classList.add('active');
   document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
-  renderKeyEventsControls([year]);
+  HistoryLensKeyEvents.renderControls([year], formatYear);
   
   // Scroll to results once they start appearing
   setTimeout(() => {
@@ -610,8 +603,8 @@ async function exploreCompare(year1, year2) {
 
   try {
     const [data1, data2] = await Promise.all([
-      need1 ? fetchHistory(year1) : Promise.resolve(cache.get(year1)),
-      need2 ? fetchHistory(year2) : Promise.resolve(cache.get(year2)),
+      need1 ? HistoryLensApi.fetchHistory(year1) : Promise.resolve(cache.get(year1)),
+      need2 ? HistoryLensApi.fetchHistory(year2) : Promise.resolve(cache.get(year2)),
     ]);
     if (need1) { cache.set(year1, data1); addToSearchHistory(year1, data1.era_description || ''); }
     if (need2) { cache.set(year2, data2); addToSearchHistory(year2, data2.era_description || ''); }
@@ -621,26 +614,6 @@ async function exploreCompare(year1, year2) {
   } finally {
     hideLoading();
   }
-}
-
-/**
- * Validates that the AI response matches the expected structure.
- * Prevents UI crashes from incomplete or malformed JSON.
- */
-function validateSchema(data) {
-  if (!data || typeof data !== 'object') throw new Error('schema');
-  if (typeof data.era_description !== 'string') throw new Error('schema');
-  
-  const requiredRegions = ['europe', 'asia', 'namerica', 'africa'];
-  if (!data.regions || typeof data.regions !== 'object') throw new Error('schema');
-  
-  for (const rid of requiredRegions) {
-    const r = data.regions[rid];
-    if (!r || !Array.isArray(r.events) || r.events.length === 0) {
-      throw new Error('schema');
-    }
-  }
-  return true;
 }
 
 function handleFetchError(err) {
@@ -660,320 +633,6 @@ function handleFetchError(err) {
     showError('Could not load data. Ensure "vercel dev" is running and your API key is configured.');
   }
   console.error('[HistoryLens]', err);
-}
-
-/* ── STREAMING API ───────────────────────────────────────────────────────── */
-
-async function fetchHistoryStream(year, callbacks) {
-  const yearLabel = formatYear(year);
-  const prompt = getHistorianPrompt(yearLabel);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45000); // Longer timeout for streaming
-
-  try {
-    const response = await fetch(CONFIG.apiEndpoint, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal:  controller.signal,
-      body: JSON.stringify({
-        model: CONFIG.model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: CONFIG.maxOutputTokens,
-        year: year,
-        stream: true
-      }),
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || `API ${response.status}`);
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullText = '';
-    
-    // State trackers for partial rendering
-    const renderedKeys = new Set();
-    const renderedRegions = new Set();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      buffer += chunk;
-
-      // Extract text content from Anthropic SSE format
-      // data: {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "..."}}
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // Keep partial line in buffer
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        try {
-          const json = JSON.parse(line.substring(6));
-          if (json.type === 'content_block_delta' && json.delta?.text) {
-            fullText += json.delta.text;
-            processIncrementalText(fullText, renderedKeys, renderedRegions, callbacks);
-          }
-        } catch (e) {
-          // Incomplete JSON in SSE line, skip
-        }
-      }
-    }
-
-    // Final pass to ensure everything is caught
-    const finalData = finalizeParsing(fullText);
-    if (finalData) {
-      validateSchema(finalData);
-      callbacks.onComplete(finalData);
-    } else {
-      throw new Error('parse: Failed to reconstruct final JSON');
-    }
-
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
-  }
-}
-
-/**
- * Extracts and renders completed JSON keys from the incoming stream.
- */
-function processIncrementalText(text, renderedKeys, renderedRegions, callbacks) {
-  // 1. Era Description
-  if (!renderedKeys.has('era_description')) {
-    const match = text.match(/"era_description":\s*"([^"]+)"/);
-    if (match) {
-      callbacks.onHeader(match[1]);
-      renderedKeys.add('era_description');
-    }
-  }
-
-  // 2. Hook Moment (Stream character by character)
-  const hookMatch = text.match(/"hook_moment":\s*"([^"]*)$| "hook_moment":\s*"([^"]*)"/);
-  if (hookMatch) {
-    const partialHook = hookMatch[1] || hookMatch[2];
-    callbacks.onHook(partialHook);
-    if (hookMatch[2] !== undefined) renderedKeys.add('hook_moment');
-  }
-
-  // 3. Global Context
-  if (!renderedKeys.has('global_context')) {
-    const match = text.match(/"global_context":\s*"([^"]+)"/);
-    if (match) {
-      callbacks.onContext(match[1]);
-      renderedKeys.add('global_context');
-    }
-  }
-
-  // 4. Global Signals (Render when block is complete)
-  if (!renderedKeys.has('global_signals')) {
-    const startIdx = text.indexOf('"global_signals":');
-    if (startIdx !== -1) {
-      const block = extractCompleteObject(text, startIdx);
-      if (block) {
-        try {
-          const signals = JSON.parse(block);
-          callbacks.onSignals(signals);
-          renderedKeys.add('global_signals');
-        } catch (e) {}
-      }
-    }
-  }
-
-  // 5. Regions (Render one by one when each region object is complete)
-  for (const r of REGIONS) {
-    if (renderedRegions.has(r.id)) continue;
-    const startIdx = text.indexOf(`"${r.id}":`);
-    if (startIdx !== -1) {
-      const block = extractCompleteObject(text, startIdx);
-      if (block) {
-        try {
-          const rData = JSON.parse(block);
-          callbacks.onRegion(r.id, rData);
-          renderedRegions.add(r.id);
-        } catch (e) {}
-      }
-    }
-  }
-  
-  // 6. Cross Region
-  if (!renderedKeys.has('cross_region')) {
-    const startIdx = text.indexOf('"cross_region":');
-    if (startIdx !== -1) {
-      const block = extractCompleteObject(text, startIdx);
-      if (block) {
-        try {
-          const crossData = JSON.parse(block);
-          callbacks.onCrossRegion(crossData);
-          renderedKeys.add('cross_region');
-        } catch (e) {}
-      }
-    }
-  }
-}
-
-/**
- * Robustly extracts a complete JSON object block starting after a key.
- * Uses brace counting to handle nested objects/arrays correctly.
- */
-function extractCompleteObject(text, startSearchIdx) {
-  const openBraceIdx = text.indexOf('{', startSearchIdx);
-  if (openBraceIdx === -1) return null;
-
-  let braceCount = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let i = openBraceIdx; i < text.length; i++) {
-    const char = text[i];
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === '"') {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (char === '"') {
-      inString = true;
-    } else if (char === '{') {
-      braceCount++;
-    } else if (char === '}') {
-      braceCount--;
-      if (braceCount === 0) {
-        return text.substring(openBraceIdx, i + 1);
-      }
-    }
-  }
-  return null;
-}
-
-function finalizeParsing(text) {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[0]);
-  } catch (e) {
-    // Basic repair if trailing braces are missing
-    try { return JSON.parse(match[0] + '}'); } catch (e2) {}
-    try { return JSON.parse(match[0] + '}}'); } catch (e3) {}
-    return null;
-  }
-}
-
-function getHistorianPrompt(yearLabel) {
-  return `You are a senior historian writing for an analytical audience. Year: ${yearLabel}.
-Return ONLY valid JSON. No markdown, no backticks, no prose outside the JSON.
-
-TONE RULES — enforce on every sentence:
-BANNED words: ongoing, attempted, continued, various, numerous, significant, important, experienced, saw, witnessed, underwent, faced, "played a role", "attempted reforms"
-REQUIRED verbs: triggered, consolidated, fractured, collapsed, accelerated, cemented, destabilized, expanded, contracted, eclipsed, redirected, dismantled, upended, reinforced, exposed, suppressed, entrenched, imposed
-EVENT DESCRIPTION: [Subject] + [strong verb] + [object] + [consequence]. 1 sentence.
-THESIS HEADLINE: a verdict in 4-6 words, not a description.
-
-SCHEMA:
-{
-  "year_label": "${yearLabel}",
-  "era_description": "4-7 word opinionated era name",
-  "hook_moment": "1-2 punchy sentences juxtaposing what was happening across regions simultaneously. Use specific names and places.",
-  "global_context": "2 sentences using required verbs.",
-  "global_signals": {
-    "war_intensity": "Low|Moderate|High|Critical|Rising|Declining|Stable|Collapsing",
-    "political_fragmentation": "...",
-    "economic_pressure": "...",
-    "trade_activity": "...",
-    "ideological_tension": "..."
-  },
-  "cross_region": {
-    "contrast": "1-2 opinionated sentences contrasting regions.",
-    "tensions": [
-      { "regions": ["europe","asia"],    "note": "1 crisp sentence." },
-      { "regions": ["namerica","africa"],"note": "1 crisp sentence." },
-      { "regions": ["europe","africa"],  "note": "1 crisp sentence." }
-    ]
-  },
-  "regions": {
-    "europe":   { "state":"2-3 words","thesis_headline":"4-6 word verdict","thesis_argument":"1 analytical sentence","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"1 sentence" },
-    "asia":     { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." },
-    "namerica": { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." },
-    "africa":   { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." }
-  }
-}
-
-HARD CONSTRAINTS:
-- Exactly 1 primary + 2 secondary events per region.
-- global_signals values: exactly one of Low, Moderate, High, Critical, Rising, Declining, Stable, Collapsing
-- Ancient years: use civilisations active at that time.
-- Event year may vary ±5 years if needed for accuracy.`;
-}
-
-/* ── API (legacy / compare fallback) ─────────────────────────────────────── */
-async function fetchHistory(year) {
-  const yearLabel = formatYear(year);
-  const prompt = getHistorianPrompt(yearLabel);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 25000);
-
-  try {
-    const response = await fetch(CONFIG.apiEndpoint, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal:  controller.signal,
-      body: JSON.stringify({
-        model: CONFIG.model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: CONFIG.maxOutputTokens,
-        year: year
-      }),
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`API ${response.status}`);
-    }
-
-    const apiData = await response.json();
-    let rawContent = '';
-    
-    if (apiData.content && apiData.content[0] && apiData.content[0].text) {
-      rawContent = apiData.content[0].text;
-    } else {
-      throw new Error('parse: Unrecognized response format');
-    }
-
-    const match = rawContent.match(/\{[\s\S]*\}/);
-    if (!match) {
-      throw new Error('parse: No JSON object found');
-    }
-
-    try {
-      const parsed = JSON.parse(match[0]);
-      console.log('PARSED OK, keys:', Object.keys(parsed));
-      console.log('REGIONS:', parsed.regions ? Object.keys(parsed.regions) : 'MISSING');
-      validateSchema(parsed);
-      return parsed;
-    } catch (e) {
-      if (e.message === 'schema') throw e;
-      throw new Error('parse: invalid JSON structure');
-    }
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error('timeout');
-    throw err;
-  }
 }
 
 /* ── RENDER — SINGLE YEAR ────────────────────────────────────────────────── */
@@ -1011,7 +670,8 @@ function renderSingle(year, data) {
   if (data.cross_region) {
     output.appendChild(buildCrossRegionBlock(data.cross_region));
   }
-  renderKeyEventsControls([year]);
+  renderHistoryGrounding([data.__grounding]);
+  HistoryLensKeyEvents.renderControls([year], formatYear);
 
   // Show feedback bar and reset its state
   const feedbackBar = document.getElementById('feedbackBar');
@@ -1034,6 +694,7 @@ function renderCompare(year1, data1, year2, data2) {
   document.getElementById('resultsEra').textContent  = `${data1.era_description || ''} · ${data2.era_description || ''}`;
   document.getElementById('globalContext').classList.remove('visible');
   document.getElementById('hookMoment').classList.remove('visible');
+  renderHistoryGrounding([data1.__grounding, data2.__grounding]);
 
   const output = document.getElementById('regionsOutput');
   output.innerHTML = '';
@@ -1058,7 +719,7 @@ function renderCompare(year1, data1, year2, data2) {
     wrapper.appendChild(block);
   }
   output.appendChild(wrapper);
-  renderKeyEventsControls([year1, year2]);
+  HistoryLensKeyEvents.renderControls([year1, year2], formatYear);
 
   addToTimeline(year1, data1.era_description || '');
   addToTimeline(year2, data2.era_description || '');
@@ -1070,199 +731,25 @@ function renderCompare(year1, data1, year2, data2) {
   }, 300);
 }
 
-/* ── KEY EVENTS ──────────────────────────────────────────────────────────── */
-function renderKeyEventsControls(years) {
-  const output = document.getElementById('keyEventsOutput');
-  output.innerHTML = '';
-  output.className = years.length > 1 ? 'key-events-output is-compare' : 'key-events-output';
-
-  for (const year of years) {
-    const section = document.createElement('section');
-    section.className = 'key-events-panel';
-    section.dataset.year = String(year);
-
-    const intro = document.createElement('div');
-    intro.className = 'key-events-intro';
-
-    const copy = document.createElement('div');
-    const eyebrow = document.createElement('div');
-    eyebrow.className = 'key-events-eyebrow';
-    eyebrow.textContent = years.length > 1 ? formatYear(year) : 'Go Beyond the Dashboard';
-    const title = document.createElement('h2');
-    title.className = 'key-events-title';
-    title.textContent = `7 Key Events of ${formatYear(year)}`;
-    const description = document.createElement('p');
-    description.className = 'key-events-description';
-    description.textContent = 'Explore major events that may sit outside the regional summary, selected for lasting political, social, scientific, economic, or cultural impact.';
-    copy.append(eyebrow, title, description);
-
-    const button = document.createElement('button');
-    button.className = 'key-events-btn';
-    button.type = 'button';
-    button.setAttribute('aria-expanded', 'false');
-    button.textContent = 'View 7 Key Events';
-    button.addEventListener('click', () => toggleKeyEvents(year, section, button));
-
-    intro.append(copy, button);
-    section.appendChild(intro);
-
-    const body = document.createElement('div');
-    body.className = 'key-events-body';
-    section.appendChild(body);
-    output.appendChild(section);
-  }
-}
-
-async function toggleKeyEvents(year, section, button) {
-  const body = section.querySelector('.key-events-body');
-  const isOpen = section.classList.contains('open');
-
-  if (isOpen) {
-    section.classList.remove('open');
-    button.setAttribute('aria-expanded', 'false');
-    button.textContent = 'View 7 Key Events';
-    return;
-  }
-
-  section.classList.add('open');
-  button.setAttribute('aria-expanded', 'true');
-  button.textContent = 'Hide Key Events';
-
-  if (eventsCache.has(year)) {
-    renderKeyEventsList(body, eventsCache.get(year));
-    return;
-  }
-
-  renderKeyEventsLoading(body, year);
-  button.disabled = true;
-
-  try {
-    const data = await fetchKeyEvents(year);
-    eventsCache.set(year, data);
-    renderKeyEventsList(body, data);
-  } catch (err) {
-    renderKeyEventsError(body, year, err);
-  } finally {
-    button.disabled = false;
-  }
-}
-
-async function fetchKeyEvents(year) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-  try {
-    const response = await fetch(CONFIG.eventsEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({ year }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data || !Array.isArray(data.events) || data.events.length !== 7) {
-      throw new Error('Unexpected key events response');
-    }
-    return data;
-  } catch (err) {
-    if (err.name === 'AbortError') throw new Error('The request timed out.');
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-function renderKeyEventsLoading(container, year) {
+function renderHistoryGrounding(items) {
+  const container = document.getElementById('historyGrounding');
   container.innerHTML = '';
-  const loading = document.createElement('div');
-  loading.className = 'key-events-loading';
-  loading.innerHTML = `
-    <span class="key-events-spinner" aria-hidden="true"></span>
-    <span>Identifying globally significant events from ${esc(formatYear(year))}...</span>`;
-  container.appendChild(loading);
-}
+  const unique = items.filter(Boolean).filter((item, index, all) =>
+    all.findIndex(candidate => candidate.url === item.url) === index
+  );
+  container.classList.toggle('visible', unique.length > 0);
+  if (unique.length === 0) return;
 
-function renderKeyEventsList(container, data) {
-  container.innerHTML = '';
-
-  const note = document.createElement('p');
-  note.className = 'key-events-note';
-  note.textContent = data.selection_note || 'Selected for historical consequence and geographic breadth.';
-  container.appendChild(note);
-
-  const list = document.createElement('ol');
-  list.className = 'key-events-list';
-
-  data.events.forEach((event, index) => {
-    const item = document.createElement('li');
-    item.className = 'key-event-card';
-
-    const number = document.createElement('div');
-    number.className = 'key-event-number';
-    number.textContent = String(index + 1).padStart(2, '0');
-
-    const content = document.createElement('div');
-    content.className = 'key-event-content';
-
-    const meta = document.createElement('div');
-    meta.className = 'key-event-meta';
-    for (const value of [event.date, event.location, event.category]) {
-      if (!value) continue;
-      const chip = document.createElement('span');
-      chip.textContent = value;
-      meta.appendChild(chip);
-    }
-
-    const title = document.createElement('h3');
-    title.className = 'key-event-title';
-    title.textContent = event.title || 'Untitled event';
-
-    const summary = document.createElement('p');
-    summary.className = 'key-event-summary';
-    summary.textContent = event.summary || '';
-
-    const significance = document.createElement('p');
-    significance.className = 'key-event-significance';
-    const label = document.createElement('strong');
-    label.textContent = 'Why it mattered: ';
-    significance.append(label, document.createTextNode(event.significance || ''));
-
-    content.append(meta, title, summary, significance);
-    item.append(number, content);
-    list.appendChild(item);
+  container.append('Grounded chronology: ');
+  unique.forEach((item, index) => {
+    if (index > 0) container.append(' · ');
+    const link = document.createElement('a');
+    link.href = item.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = item.name;
+    container.appendChild(link);
   });
-
-  container.appendChild(list);
-}
-
-function renderKeyEventsError(container, year, err) {
-  container.innerHTML = '';
-  const error = document.createElement('div');
-  error.className = 'key-events-error';
-  const message = document.createElement('span');
-  message.textContent = err.message || 'Could not load key events.';
-
-  const retry = document.createElement('button');
-  retry.type = 'button';
-  retry.textContent = 'Try again';
-  retry.addEventListener('click', async () => {
-    renderKeyEventsLoading(container, year);
-    try {
-      const data = await fetchKeyEvents(year);
-      eventsCache.set(year, data);
-      renderKeyEventsList(container, data);
-    } catch (retryErr) {
-      renderKeyEventsError(container, year, retryErr);
-    }
-  });
-
-  error.append(message, retry);
-  container.appendChild(error);
 }
 
 /* ── CARD BUILDER ────────────────────────────────────────────────────────── */
@@ -1821,15 +1308,13 @@ function hideError() {
 
 function hideResults() {
   const results = document.getElementById('results');
-  results.classList.add('fading');
-  setTimeout(() => {
-    results.classList.remove('active', 'fading');
-    document.getElementById('globalContext').classList.remove('visible');
-    document.getElementById('signalsBar').classList.remove('visible');
-    document.getElementById('hookMoment').classList.remove('visible');
-    document.getElementById('feedbackBar').style.display = 'none';
-    document.getElementById('keyEventsOutput').innerHTML = '';
-  }, 200);
+  results.classList.remove('active', 'fading');
+  document.getElementById('globalContext').classList.remove('visible');
+  document.getElementById('signalsBar').classList.remove('visible');
+  document.getElementById('hookMoment').classList.remove('visible');
+  renderHistoryGrounding([]);
+  document.getElementById('feedbackBar').style.display = 'none';
+  document.getElementById('keyEventsOutput').innerHTML = '';
 }
 
 /* ── TOAST ───────────────────────────────────────────────────────────────── */

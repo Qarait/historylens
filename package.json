@@ -1,6 +1,6 @@
 {
   "name": "historylens",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "Comparative world history explorer — understand what the world looked like in any year",
   "homepage": "https://historylens.app",
@@ -10,10 +10,12 @@
   },
   "license": "MIT",
   "scripts": {
-    "test":          "node --test tests/*.test.js",
-    "serve":         "python3 -m http.server 8000",
-    "serve:node":    "npx serve .",
-    "lint:js":       "npx eslint src/app.js",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "playwright test",
+    "check": "npm run lint:js && npm run validate:html && npm test",
+    "serve": "python3 -m http.server 8000",
+    "serve:node": "npx serve .",
+    "lint:js": "eslint src api tests e2e *.js",
     "validate:html": "npx html-validate index.html"
   },
   "keywords": [
@@ -27,11 +29,12 @@
     "ai"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "devDependencies": {
-    "eslint": "^8.0.0",
-    "html-validate": "^8.0.0",
-    "serve": "^14.0.0"
+    "@playwright/test": "^1.60.0",
+    "eslint": "^10.5.0",
+    "html-validate": "^11.5.3",
+    "serve": "^14.2.6"
   }
 }

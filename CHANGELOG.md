@@ -12,9 +12,17 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 - On-demand "7 Key Events" panels for single-year and comparison results.
 - Globally balanced event selection with dates, locations, categories, summaries, and historical significance.
 - A dedicated server-side `/api/events` endpoint with input validation, rate limiting, response validation, and browser session caching.
+- Wikipedia year-chronology grounding with verified source links and attribution.
+- Optional Upstash Redis rate limiting for coordination across Vercel instances.
+- GitHub Actions CI with linting, HTML validation, unit tests, and Playwright browser tests.
+- Separate frontend modules for API streaming and key-event rendering.
 
 ### Fixed
 - Updated API tests from the retired Gemini request shape to the current Anthropic proxy contract.
+- Prevented clients from supplying model names, token budgets, or historian prompts.
+- Fixed a race where fast cached responses could be hidden by the previous-result animation.
+- Replaced substring-based origin checks with exact hostname validation.
+- Added keyboard and screen-reader state to the comparison toggle.
 
 ---
 

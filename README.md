@@ -22,6 +22,7 @@ For any year from ancient history to the present, it produces:
 * **Per region analysis**: Europe, Asia, the Americas, and Africa, each with a thesis (not a summary), ranked events, notable figures, and a "why it matters" conclusion
 * **Global signals**: a structured readout of war intensity, political fragmentation, economic pressure, trade activity, and ideological tension
 * **Cross regional contrast**: an analytical statement connecting the regions, with specific bilateral tension notes
+* **Source grounded key events**: seven additional events retrieved on demand from a verified year chronology, each with a source link
 
 ***
 
@@ -72,15 +73,20 @@ Open `http://localhost:3000`.
 ```
 historylens/
 ├── index.html          # HTML shell — structure only, no inline scripts or styles
+├── api/                # Validated Vercel functions and shared server helpers
 ├── src/
 │   ├── styles.css      # All CSS — design tokens, components, responsive rules
-│   └── app.js          # All JavaScript — config, state, API, rendering
+│   ├── app.js          # Application state and dashboard rendering
+│   ├── history-api.js  # API client and streaming parser
+│   └── key-events.js   # Source grounded event panel
+├── e2e/                # Playwright desktop and mobile tests
 ├── README.md
 ├── CHANGELOG.md
 └── LICENSE
 ```
 
-The three-file split is intentional. See [Architecture decisions](#architecture-decisions).
+The browser code remains framework free, but responsibilities are separated so
+API parsing, key-event rendering, and dashboard state can evolve independently.
 
 ---
 
@@ -102,7 +108,19 @@ The 1-primary + 2-secondary constraint is not just visual — it forces the mode
 
 ### Why we use a custom-built streaming parser (v1.1.0)
 
-To provide an instant experience, we don't wait for the full JSON block from the LLM. Instead, we use a custom "brace-counting" incremental parser in `app.js` that identifies when top-level objects (like regional cards) are complete and renders them to the grid one-by-one. This reduces the "perceived" wait time from ~10 seconds to ~2 seconds.
+To provide an instant experience, we don't wait for the full JSON block from the LLM. Instead, we use a custom "brace-counting" incremental parser in `src/history-api.js` that identifies when top-level objects (like regional cards) are complete and renders them to the grid one-by-one. This reduces the "perceived" wait time from ~10 seconds to ~2 seconds.
+
+### How source grounding works
+
+The browser sends only a validated year and streaming preference. Prompt text,
+model selection, token budgets, and grounding rules live on the server.
+HistoryLens retrieves the Events chronology from the matching Wikipedia year
+page and supplies selected excerpts as factual anchors. The seven-event endpoint
+accepts only source titles present in that chronology and converts them into
+verified article links before returning data to the browser.
+
+Wikipedia is a starting point, not a substitute for primary or specialist
+sources. The interface keeps that distinction visible in a compact attribution.
 
 ### Why `innerHTML` is not used for AI output
 
@@ -136,7 +154,7 @@ HistoryLens is designed to complement, not replace, primary sources and textbook
 * Ask students to compare two years before and after a major event
 * Use the "Curated Threads" as structured reading pathways through a historical theme
 
-**Accuracy note:** AI-generated content is structured around consensus historical scholarship but should always be verified against textbooks, encyclopedias, and primary sources before use in assessed work.
+**Accuracy note:** AI-generated content is grounded with a Wikipedia year chronology when available, but interpretation and selection remain model generated. Verify important claims against textbooks, specialist scholarship, and primary sources before assessed use.
 
 ---
 
@@ -146,7 +164,7 @@ Contributions are welcome. Before opening a PR, please read the architecture dec
 
 **Open issues worth tackling:**
 * [x] Backend proxy for API key security (Vercel serverless implementation)
-* [ ] Source citations alongside events
+* [x] Source citations alongside key events
 * [ ] Adaptive region lists based on historical relevance
 * [ ] Print stylesheet refinements for 3+ region compare mode
 * [ ] Offline mode with a pregenerated cache of the 50 most common years
