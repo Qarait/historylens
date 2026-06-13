@@ -25,6 +25,7 @@ export default [
         clearInterval: 'readonly',
         console: 'readonly',
         HistoryLensApi: 'readonly',
+        HistoryLensPeriodApi: 'readonly',
         HistoryLensKeyEvents: 'readonly',
         HistoryLensEventChecker: 'readonly',
       },

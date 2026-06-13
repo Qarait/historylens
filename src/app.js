@@ -128,12 +128,15 @@ const SURPRISE_POOL = [
 
 /* ── STATE ───────────────────────────────────────────────────────────────── */
 const cache          = new Map();       // year (int) → parsed API response
+const periodCache    = new Map();
 const searchHistory  = [];              // [{ year, era }]
 let compareMode      = false;
+let searchMode       = 'year';
 let loadingActive     = false;
 let loadingTimer     = null;
 let progressTimer    = null;
 let currentYear      = null;
+let currentPeriod    = null;
 let hookIndex        = 0;
 let hookTimer        = null;
 let slowWarningTimer = null;
@@ -209,9 +212,14 @@ document.addEventListener('DOMContentLoaded', () => {
     .addEventListener('keydown', e => { if (e.key === 'Enter') explore(); });
   document.getElementById('yearInput2')
     .addEventListener('keydown', e => { if (e.key === 'Enter') explore(); });
+  document.getElementById('periodStartInput')
+    .addEventListener('keydown', e => { if (e.key === 'Enter') explore(); });
+  document.getElementById('periodEndInput')
+    .addEventListener('keydown', e => { if (e.key === 'Enter') explore(); });
 
   // Search and utility buttons
   document.getElementById('searchBtn')       .addEventListener('click',  explore);
+  document.getElementById('periodSearchBtn') .addEventListener('click',  explore);
   document.getElementById('surpriseBtn')     .addEventListener('click',  surpriseMe);
   document.getElementById('btnPrint')        .addEventListener('click',  doPrint);
   document.getElementById('btnCopy')         .addEventListener('click',  doCopy);
@@ -227,6 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Compare toggle
   document.getElementById('compareTrack').addEventListener('click', toggleCompare);
+  document.getElementById('yearModeBtn').addEventListener('click', () => setSearchMode('year'));
+  document.getElementById('periodModeBtn').addEventListener('click', () => setSearchMode('period'));
+  document.querySelectorAll('.period-preset').forEach(btn => {
+    btn.addEventListener('click', () => setPeriod(
+      parseInt(btn.dataset.start, 10),
+      parseInt(btn.dataset.end, 10)
+    ));
+  });
 
   // Mobile menu
   document.getElementById('mobileMenuBtn').addEventListener('click', toggleMobileNav);
@@ -237,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Era buttons — use data-year, no onclick attributes
-  document.querySelectorAll('.era-btn').forEach(btn => {
+  document.querySelectorAll('.era-btn[data-year]').forEach(btn => {
     const year = parseInt(btn.dataset.year, 10);
     btn.addEventListener('click', () => setYear(year));
   });
@@ -277,8 +293,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // URL param — ?year=1821
   const params = new URLSearchParams(location.search);
+  const urlStart = parseInt(params.get('start'), 10);
+  const urlEnd = parseInt(params.get('end'), 10);
   const urlYear = parseInt(params.get('year'), 10);
-  if (urlYear && !isNaN(urlYear)) {
+  if (urlStart && urlEnd && !isNaN(urlStart) && !isNaN(urlEnd)) {
+    setSearchMode('period');
+    document.getElementById('periodStartInput').value = urlStart;
+    document.getElementById('periodEndInput').value = urlEnd;
+    explore();
+  } else if (urlYear && !isNaN(urlYear)) {
     document.getElementById('yearInput').value = urlYear;
     explore();
   }
@@ -302,6 +325,7 @@ function closeMobileNav() {
 
 /* ── COMPARE TOGGLE ──────────────────────────────────────────────────────── */
 function toggleCompare() {
+  if (searchMode !== 'year') return;
   compareMode = !compareMode;
   const track = document.getElementById('compareTrack');
   track.classList.toggle('on', compareMode);
@@ -311,21 +335,71 @@ function toggleCompare() {
   if (compareMode) document.getElementById('yearInput2').focus();
 }
 
+function setSearchMode(mode) {
+  if (mode === 'period' && compareMode) {
+    searchMode = 'year';
+    toggleCompare();
+  }
+  searchMode = mode;
+  const isPeriod = mode === 'period';
+  document.getElementById('yearModeBtn').classList.toggle('active', !isPeriod);
+  document.getElementById('yearModeBtn').setAttribute('aria-pressed', String(!isPeriod));
+  document.getElementById('periodModeBtn').classList.toggle('active', isPeriod);
+  document.getElementById('periodModeBtn').setAttribute('aria-pressed', String(isPeriod));
+  document.getElementById('yearSearchRow').classList.toggle('hidden', isPeriod);
+  document.getElementById('periodSearchRow').classList.toggle('visible', isPeriod);
+  document.getElementById('compareOption').classList.toggle('hidden', isPeriod);
+  document.getElementById('yearPresets').classList.toggle('hidden', isPeriod);
+  document.getElementById('periodPresets').classList.toggle('visible', isPeriod);
+  document.getElementById('surpriseBtn').style.display = isPeriod ? 'none' : '';
+  document.getElementById('search-label').textContent = isPeriod
+    ? 'Enter a period to explore change over time'
+    : 'Enter a year to explore';
+  document.getElementById('search-hint').textContent = isPeriod
+    ? 'Periods may span up to 25 years'
+    : 'Press Enter · Ctrl/Cmd+K to focus';
+  document.getElementById(isPeriod ? 'periodStartInput' : 'yearInput').focus();
+}
+
 /* ── YEAR HELPERS ────────────────────────────────────────────────────────── */
 /** Format year as "1821 CE" or "44 BCE" */
 function formatYear(year) {
   return year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`;
 }
 
+function formatPeriod(startYear, endYear) {
+  if (startYear < 0 && endYear < 0) {
+    return `${Math.abs(startYear)}-${Math.abs(endYear)} BCE`;
+  }
+  if (startYear > 0 && endYear > 0) {
+    return `${startYear}-${endYear} CE`;
+  }
+  return `${formatYear(startYear)}-${formatYear(endYear)}`;
+}
+
+function historicalYearDistance(startYear, endYear) {
+  return startYear < 0 && endYear > 0
+    ? endYear - startYear - 1
+    : endYear - startYear;
+}
+
 /* ── QUICK NAV ───────────────────────────────────────────────────────────── */
 function setYear(year) {
+  if (searchMode !== 'year') setSearchMode('year');
   document.getElementById('yearInput').value = year;
 
   // Highlight the matching era button by data-year attribute
-  document.querySelectorAll('.era-btn').forEach(btn => {
+  document.querySelectorAll('.era-btn[data-year]').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.year, 10) === year);
   });
 
+  explore();
+}
+
+function setPeriod(startYear, endYear) {
+  setSearchMode('period');
+  document.getElementById('periodStartInput').value = startYear;
+  document.getElementById('periodEndInput').value = endYear;
   explore();
 }
 
@@ -405,6 +479,10 @@ function startHookCycle() {
 
 /* ── EXPLORE (main entry) ────────────────────────────────────────────────── */
 async function explore() {
+  if (searchMode === 'period') {
+    await explorePeriodFromInputs();
+    return;
+  }
   const raw  = document.getElementById('yearInput').value.trim();
   const year = parseInt(raw, 10);
 
@@ -433,6 +511,7 @@ async function explore() {
   document.getElementById('apiKeyNotice').classList.remove('visible');
   document.getElementById('searchBtn').disabled = true;
   currentYear = year;
+  currentPeriod = null;
 
   // Update URL for shareability
   const newUrl = `${window.location.pathname}?year=${year}`;
@@ -543,6 +622,8 @@ async function exploreSingle(year) {
  * Prepares the results container for incremental updates.
  */
 function initResultsContainer(year) {
+  document.getElementById('periodArc').classList.remove('visible');
+  document.getElementById('hookLabel').textContent = 'The World in This Year';
   document.getElementById('resultsYear').textContent = formatYear(year);
   document.getElementById('resultsEra').textContent = 'Analyzing...';
   document.getElementById('hookText').innerHTML = '';
@@ -608,6 +689,67 @@ function renderCrossRegion(crossData) {
   }
 }
 
+async function explorePeriodFromInputs() {
+  const rawStart = document.getElementById('periodStartInput').value.trim();
+  const rawEnd = document.getElementById('periodEndInput').value.trim();
+  const startYear = parseInt(rawStart, 10);
+  const endYear = parseInt(rawEnd, 10);
+
+  if (!rawStart || !rawEnd || isNaN(startYear) || isNaN(endYear)) {
+    showError('Please enter both a start year and an end year.');
+    return;
+  }
+  if (
+    startYear < CONFIG.minYear ||
+    startYear > CONFIG.maxYear ||
+    endYear < CONFIG.minYear ||
+    endYear > CONFIG.maxYear ||
+    startYear === 0 ||
+    endYear === 0
+  ) {
+    showError(`Use historical years between ${CONFIG.minYear} BCE and ${CONFIG.maxYear} CE, excluding year 0.`);
+    return;
+  }
+  if (startYear >= endYear) {
+    showError('The end year must come after the start year.');
+    return;
+  }
+  if (historicalYearDistance(startYear, endYear) > 24) {
+    showError('Periods may span at most 25 years.');
+    return;
+  }
+  if (loadingActive) return;
+
+  hideError();
+  hideResults();
+  document.getElementById('apiKeyNotice').classList.remove('visible');
+  document.getElementById('periodSearchBtn').disabled = true;
+  currentYear = null;
+  currentPeriod = { startYear, endYear };
+  window.history.pushState(
+    { startYear, endYear },
+    '',
+    `${window.location.pathname}?start=${startYear}&end=${endYear}`
+  );
+
+  const key = `${startYear}:${endYear}`;
+  try {
+    if (periodCache.has(key)) {
+      renderPeriod(startYear, endYear, periodCache.get(key));
+      return;
+    }
+    showLoading();
+    const data = await HistoryLensPeriodApi.fetchPeriod(startYear, endYear);
+    periodCache.set(key, data);
+    renderPeriod(startYear, endYear, data);
+  } catch (error) {
+    handleFetchError(error);
+  } finally {
+    hideLoading();
+    document.getElementById('periodSearchBtn').disabled = false;
+  }
+}
+
 async function exploreCompare(year1, year2) {
   const need1 = !cache.has(year1);
   const need2 = !cache.has(year2);
@@ -655,6 +797,8 @@ function renderSingle(year, data) {
     regions: DEFAULT_REGIONS,
   };
   activeRegionProfile = profile;
+  document.getElementById('periodArc').classList.remove('visible');
+  document.getElementById('hookLabel').textContent = 'The World in This Year';
   // Safe: textContent for all AI-generated plain text
   document.getElementById('resultsYear').textContent = formatYear(year);
   document.getElementById('resultsEra').textContent  = data.era_description || '';
@@ -709,7 +853,94 @@ function renderSingle(year, data) {
 }
 
 /* ── RENDER — COMPARE ────────────────────────────────────────────────────── */
+function renderPeriod(startYear, endYear, data) {
+  const profile = data.__regionProfile || {
+    id: 'modern',
+    label: 'Modern continental regions',
+    regions: DEFAULT_REGIONS,
+  };
+  activeRegionProfile = profile;
+  document.getElementById('resultsYear').textContent = formatPeriod(startYear, endYear);
+  document.getElementById('resultsEra').textContent = data.era_description || '';
+  document.getElementById('hookLabel').textContent = 'How the World Changed';
+
+  const hookEl = document.getElementById('hookMoment');
+  if (data.hook_moment) {
+    document.getElementById('hookText').innerHTML = boldNames(esc(data.hook_moment));
+    hookEl.classList.add('visible');
+  } else {
+    hookEl.classList.remove('visible');
+  }
+
+  document.getElementById('globalContextText').textContent = data.global_context || '';
+  document.getElementById('globalContext').classList.toggle('visible', !!data.global_context);
+  renderPeriodArc(data.period_phases);
+  renderSignals(data.global_signals);
+  renderRegionProfileNote(profile);
+
+  const output = document.getElementById('regionsOutput');
+  output.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'regions-grid';
+  for (const region of profile.regions) {
+    const regionData = data.regions?.[region.id];
+    if (regionData) grid.appendChild(buildCard(region, regionData, { period: true }));
+  }
+  output.appendChild(grid);
+
+  if (data.cross_region) {
+    output.appendChild(buildCrossRegionBlock(data.cross_region, profile.regions));
+  }
+
+  renderHistoryGrounding(data.__grounding || []);
+  document.getElementById('keyEventsOutput').innerHTML = '';
+  document.getElementById('eventCheckOutput').innerHTML = '';
+  document.getElementById('feedbackBar').style.display = 'flex';
+  document.getElementById('fbPos').className = 'feedback-btn';
+  document.getElementById('fbNeg').className = 'feedback-btn';
+  document.getElementById('results').classList.add('active');
+  setTimeout(() => {
+    document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
+}
+
+function renderPeriodArc(phases) {
+  const arc = document.getElementById('periodArc');
+  arc.innerHTML = '';
+  if (!Array.isArray(phases) || phases.length !== 3) {
+    arc.classList.remove('visible');
+    return;
+  }
+
+  for (const phase of phases) {
+    const card = document.createElement('article');
+    card.className = 'period-phase';
+
+    const stage = document.createElement('div');
+    stage.className = 'period-phase-stage';
+    stage.textContent = phase.stage || '';
+
+    const years = document.createElement('div');
+    years.className = 'period-phase-years';
+    years.textContent = phase.years || '';
+
+    const headline = document.createElement('div');
+    headline.className = 'period-phase-headline';
+    headline.textContent = phase.headline || '';
+
+    const description = document.createElement('div');
+    description.className = 'period-phase-description';
+    description.textContent = phase.description || '';
+
+    card.append(stage, years, headline, description);
+    arc.appendChild(card);
+  }
+  arc.classList.add('visible');
+}
+
 function renderCompare(year1, data1, year2, data2) {
+  document.getElementById('periodArc').classList.remove('visible');
+  document.getElementById('hookLabel').textContent = 'The World in This Year';
   document.getElementById('resultsYear').textContent = `${formatYear(year1)} vs ${formatYear(year2)}`;
   document.getElementById('resultsEra').textContent  = `${data1.era_description || ''} · ${data2.era_description || ''}`;
   document.getElementById('globalContext').classList.remove('visible');
@@ -811,7 +1042,7 @@ function renderRegionProfileNote(profile) {
  * Builds a region card entirely with DOM methods.
  * All AI text goes through esc() before innerHTML, or uses textContent directly.
  */
-function buildCard(region, rd) {
+function buildCard(region, rd, options = {}) {
   const card = document.createElement('article');
   card.className = 'region-card';
   card.dataset.region = region.id;
@@ -864,7 +1095,7 @@ function buildCard(region, rd) {
   const eventsSection = document.createElement('div');
   const evTitle = document.createElement('div');
   evTitle.className = 'section-title';
-  evTitle.textContent = 'Key Events';
+  evTitle.textContent = options.period ? 'Key Turning Points' : 'Key Events';
   eventsSection.appendChild(evTitle);
 
   const list = document.createElement('ul');
@@ -877,7 +1108,8 @@ function buildCard(region, rd) {
     if (isPrimary) {
       const top = document.createElement('div');
       top.className = 'primary-top';
-      top.innerHTML = `<span class="event-year">${esc(String(ev.year))}</span><span class="event-rank primary">⭐ Primary</span>`;
+      const primaryLabel = options.period ? 'Defining shift' : 'Primary';
+      top.innerHTML = `<span class="event-year">${esc(String(ev.year))}</span><span class="event-rank primary">${esc(primaryLabel)}</span>`;
       item.appendChild(top);
 
       const title = document.createElement('div');
@@ -897,7 +1129,7 @@ function buildCard(region, rd) {
       const content = document.createElement('div');
       const rank = document.createElement('div');
       rank.className = 'event-rank secondary';
-      rank.textContent = '· Supporting';
+      rank.textContent = options.period ? 'Supporting shift' : 'Supporting';
 
       const title = document.createElement('div');
       title.className = 'event-title';
@@ -1044,9 +1276,11 @@ function submitFeedback(type) {
 }
 
 function reportIssue() {
-  const year    = currentYear ? formatYear(currentYear) : 'unknown year';
-  const subject = encodeURIComponent(`HistoryLens — Accuracy issue for ${year}`);
-  const body    = encodeURIComponent(`Year explored: ${year}\n\nIssue description:\n\n`);
+  const selection = currentPeriod
+    ? formatPeriod(currentPeriod.startYear, currentPeriod.endYear)
+    : currentYear ? formatYear(currentYear) : 'unknown period';
+  const subject = encodeURIComponent(`HistoryLens - Accuracy issue for ${selection}`);
+  const body = encodeURIComponent(`Period explored: ${selection}\n\nIssue description:\n\n`);
   window.open(`mailto:hello@historylens.app?subject=${subject}&body=${body}`);
 }
 
@@ -1281,11 +1515,14 @@ function doCopy() {
 }
 
 function shareUrl() {
-  if (!currentYear) {
-    showToast('Search for a year first to share!');
+  if (!currentYear && !currentPeriod) {
+    showToast('Explore a year or period first to share.');
     return;
   }
-  const url = `${window.location.origin}${window.location.pathname}?year=${currentYear}`;
+  const query = currentPeriod
+    ? `start=${currentPeriod.startYear}&end=${currentPeriod.endYear}`
+    : `year=${currentYear}`;
+  const url = `${window.location.origin}${window.location.pathname}?${query}`;
   
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url)
@@ -1330,6 +1567,7 @@ function showLoading() {
   loadingActive = true;
   document.getElementById('loadingSection').classList.add('active');
   document.getElementById('searchBtn').classList.add('loading');
+  document.getElementById('periodSearchBtn').classList.add('loading');
   startProgress();
   let msgIndex = 0;
   const statusEl = document.getElementById('loadingStatus');
@@ -1351,6 +1589,7 @@ function hideLoading() {
   finishProgress();
   document.getElementById('loadingSection').classList.remove('active');
   document.getElementById('searchBtn').classList.remove('loading');
+  document.getElementById('periodSearchBtn').classList.remove('loading');
 }
 
 /* ── RESULTS HELPERS ─────────────────────────────────────────────────────── */
@@ -1369,6 +1608,7 @@ function hideResults() {
   document.getElementById('globalContext').classList.remove('visible');
   document.getElementById('signalsBar').classList.remove('visible');
   document.getElementById('hookMoment').classList.remove('visible');
+  document.getElementById('periodArc').classList.remove('visible');
   renderHistoryGrounding([]);
   renderRegionProfileNote(null);
   document.getElementById('feedbackBar').style.display = 'none';

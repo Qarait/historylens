@@ -58,6 +58,12 @@ export function getRegionProfile(year) {
   return PROFILES.find(profile => year <= profile.maxYear);
 }
 
+export function getRegionProfileForPeriod(startYear, endYear) {
+  let midpoint = Math.trunc((startYear + endYear) / 2);
+  if (midpoint === 0) midpoint = endYear > 0 ? 1 : -1;
+  return getRegionProfile(midpoint);
+}
+
 export function publicRegionProfile(profile) {
   return {
     id: profile.id,

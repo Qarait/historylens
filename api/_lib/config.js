@@ -3,7 +3,9 @@ export const MODEL = 'claude-haiku-4-5-20251001';
 export const MIN_YEAR = -3000;
 export const MAX_YEAR = 2026;
 export const HISTORY_MAX_TOKENS = 2800;
+export const PERIOD_MAX_TOKENS = 3000;
 export const EVENTS_MAX_TOKENS = 2400;
+export const MAX_PERIOD_YEARS = 25;
 
 export function parseHistoricalYear(value) {
   const year = Number.parseInt(value, 10);
@@ -15,6 +17,21 @@ export function parseHistoricalYear(value) {
 
 export function formatHistoricalYear(year) {
   return year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`;
+}
+
+export function historicalYearDistance(startYear, endYear) {
+  const rawDistance = endYear - startYear;
+  return startYear < 0 && endYear > 0 ? rawDistance - 1 : rawDistance;
+}
+
+export function formatHistoricalPeriod(startYear, endYear) {
+  if (startYear < 0 && endYear < 0) {
+    return `${Math.abs(startYear)}-${Math.abs(endYear)} BCE`;
+  }
+  if (startYear > 0 && endYear > 0) {
+    return `${startYear}-${endYear} CE`;
+  }
+  return `${formatHistoricalYear(startYear)}-${formatHistoricalYear(endYear)}`;
 }
 
 export function wikipediaYearTitle(year) {

@@ -92,8 +92,12 @@
   <!-- Search box -->
   <div class="search-wrap">
     <div class="search-box" role="search">
+      <div class="view-mode" role="group" aria-label="Historical view">
+        <button type="button" class="view-mode-btn active" id="yearModeBtn" aria-pressed="true">Year</button>
+        <button type="button" class="view-mode-btn" id="periodModeBtn" aria-pressed="false">Period</button>
+      </div>
       <span class="search-box-label" id="search-label">Enter a year to explore</span>
-      <div class="search-row">
+      <div class="search-row" id="yearSearchRow">
         <input
           id="yearInput"
           class="year-input"
@@ -109,11 +113,43 @@
           Explore →
         </button>
       </div>
+      <div class="period-row" id="periodSearchRow">
+        <div class="period-input-wrap">
+          <input
+            id="periodStartInput"
+            class="year-input"
+            type="number"
+            min="-3000"
+            max="2026"
+            placeholder="Start"
+            autocomplete="off"
+            aria-label="Period start year"
+          />
+          <div class="compare-label">Start year</div>
+        </div>
+        <span class="period-separator" aria-hidden="true">to</span>
+        <div class="period-input-wrap">
+          <input
+            id="periodEndInput"
+            class="year-input"
+            type="number"
+            min="-3000"
+            max="2026"
+            placeholder="End"
+            autocomplete="off"
+            aria-label="Period end year"
+          />
+          <div class="compare-label">End year</div>
+        </div>
+        <button type="button" class="search-btn period-search-btn" id="periodSearchBtn" aria-label="Explore this period">
+          Explore Period
+        </button>
+      </div>
       <div class="search-options">
         <span class="search-hint" id="search-hint">
           Press Enter &nbsp;·&nbsp; <kbd>⌘</kbd><kbd>K</kbd> to focus
         </span>
-        <div class="compare-toggle" title="Compare two years side by side">
+        <div class="compare-toggle" id="compareOption" title="Compare two years side by side">
           <button type="button" class="toggle-track" id="compareTrack" aria-label="Compare two years" aria-pressed="false"><span class="toggle-thumb"></span></button>
           <span>Compare two years</span>
         </div>
@@ -133,7 +169,7 @@
           <div class="compare-label">Year 2</div>
         </div>
       </div>
-      <div class="quick-nav" role="navigation" aria-label="Notable years">
+      <div class="quick-nav" id="yearPresets" role="navigation" aria-label="Notable years">
         <div class="quick-nav-label">Notable eras</div>
         <button type="button" class="era-btn" data-year="-44">44 BCE</button>
         <button type="button" class="era-btn" data-year="476">476</button>
@@ -148,6 +184,13 @@
         <button type="button" class="era-btn" data-year="1945">1945</button>
         <button type="button" class="era-btn" data-year="1969">1969</button>
         <button type="button" class="era-btn" data-year="1989">1989</button>
+      </div>
+      <div class="quick-nav period-presets" id="periodPresets" role="navigation" aria-label="Notable periods">
+        <div class="quick-nav-label">Notable periods</div>
+        <button type="button" class="era-btn period-preset" data-start="1340" data-end="1350">1340-1350</button>
+        <button type="button" class="era-btn period-preset" data-start="1914" data-end="1918">1914-1918</button>
+        <button type="button" class="era-btn period-preset" data-start="1960" data-end="1969">The 1960s</button>
+        <button type="button" class="era-btn period-preset" data-start="1989" data-end="1991">1989-1991</button>
       </div>
       <button type="button" class="surprise-btn" id="surpriseBtn">
         🎲 Surprise me — take me to a random year in history
@@ -188,7 +231,7 @@
     <!-- Hook moment (AI-generated, shown after search) -->
     <div class="hook-moment" id="hookMoment">
       <div class="hook-card">
-        <div class="hook-label">The World in This Year</div>
+        <div class="hook-label" id="hookLabel">The World in This Year</div>
         <div class="hook-text" id="hookText"></div>
       </div>
     </div>
@@ -232,6 +275,9 @@
         </button>
       </div>
     </div>
+
+    <!-- Change-over-time arc for period views -->
+    <div class="period-arc" id="periodArc"></div>
 
     <!-- Global context -->
     <div class="global-context" id="globalContext">
@@ -513,6 +559,7 @@
 </footer>
 
 <script src="src/history-api.js"></script>
+<script src="src/period-api.js"></script>
 <script src="src/key-events.js"></script>
 <script src="src/event-checker.js"></script>
 <script src="src/app.js"></script>

@@ -59,6 +59,48 @@ export async function getYearGrounding(year) {
   return value;
 }
 
+export async function getPeriodGrounding(startYear, endYear) {
+  const years = sampleHistoricalYears(startYear, endYear);
+  const results = await Promise.allSettled(years.map(getYearGrounding));
+  const sources = [];
+  const contextParts = [];
+
+  results.forEach(result => {
+    if (result.status !== 'fulfilled') return;
+    const grounding = result.value;
+    sources.push({
+      name: grounding.yearPageTitle,
+      url: grounding.yearPageUrl,
+    });
+    contextParts.push(
+      `CHRONOLOGY FOR ${grounding.yearPageTitle}:\n${grounding.context}`
+    );
+  });
+
+  if (contextParts.length === 0) {
+    throw new Error('No sampled chronologies found for period');
+  }
+
+  return {
+    context: contextParts.join('\n\n').slice(0, MAX_CONTEXT_CHARS),
+    sources,
+    sourceName: 'Wikipedia contributors',
+  };
+}
+
+export function sampleHistoricalYears(startYear, endYear, maxSamples = 5) {
+  const distance = historicalDistance(startYear, endYear);
+  const count = Math.min(maxSamples, distance + 1);
+  const years = new Set([startYear, endYear]);
+
+  for (let index = 1; index < count - 1; index++) {
+    const offset = Math.round((distance * index) / (count - 1));
+    years.add(addHistoricalYears(startYear, offset));
+  }
+
+  return [...years].sort((a, b) => a - b);
+}
+
 export function wikipediaArticleUrl(title) {
   return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
 }
@@ -247,4 +289,16 @@ async function mediaWikiRequest(params) {
   });
   if (!response.ok) throw new Error(`Wikipedia ${response.status}`);
   return response.json();
+}
+
+function historicalDistance(startYear, endYear) {
+  return startYear < 0 && endYear > 0
+    ? endYear - startYear - 1
+    : endYear - startYear;
+}
+
+function addHistoricalYears(year, offset) {
+  let result = year + offset;
+  if (year < 0 && result >= 0) result += 1;
+  return result;
 }

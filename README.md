@@ -7,7 +7,7 @@ Enter a year. See what was happening simultaneously across Europe, Asia, the Ame
 **Live Demo:** [historylens-psi.vercel.app](https://historylens-psi.vercel.app)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-c9a84c.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.5.0-16a085.svg)
+![Version](https://img.shields.io/badge/version-1.6.0-16a085.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 ***
@@ -26,6 +26,7 @@ For any year from ancient history to the present, it produces:
 * **Event chronology check**: search for an event that may be missing from the dashboard and verify whether it appears in that year's source chronology
 * **Curated verified years**: reviewed editions of high-interest years return instantly without an AI request; 2020 is the first curated edition
 * **Adaptive historical regions**: ancient, medieval, early-modern, and modern searches use region groupings appropriate to their period instead of forcing every year into modern continents
+* **Decade and period views**: explore a custom range of up to 25 years through an opening, pivot, and outcome arc, with two ranked turning points per adaptive region
 
 ***
 
@@ -169,7 +170,8 @@ Contributions are welcome. Before opening a PR, please read the architecture dec
 **Open issues worth tackling:**
 * [x] Backend proxy for API key security (Vercel serverless implementation)
 * [x] Source citations alongside key events
-* [ ] Adaptive region lists based on historical relevance
+* [x] Adaptive region lists based on historical relevance
+* [x] Decade and custom-period views
 * [ ] Print stylesheet refinements for 3+ region compare mode
 * [ ] Offline mode with a pregenerated cache of the 50 most common years
 

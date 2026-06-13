@@ -5,10 +5,12 @@ process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
 delete process.env.NODE_ENV;
 
 const { default: historyHandler } = await import('../api/history.js');
+const { default: periodHandler } = await import('../api/period.js');
 const { default: eventsHandler } = await import('../api/events.js');
 const { default: checkEventHandler } = await import('../api/check-event.js');
 const { enforceRateLimit } = await import('../api/_lib/request.js');
 const { getRegionProfile } = await import('../api/_lib/region-profiles.js');
+const { sampleHistoricalYears } = await import('../api/_lib/wikipedia.js');
 const originalFetch = globalThis.fetch;
 
 function makeMocks(body, method = 'POST') {
@@ -74,6 +76,45 @@ function validEventsPayload() {
       significance: 'This changed the long-term political landscape.',
       source_title: `Source Event ${index + 1}`,
     })),
+  };
+}
+
+function validPeriodPayload() {
+  return {
+    period_label: '1960-1969 CE',
+    era_description: 'A Decade of Upheaval',
+    hook_moment: 'The decade opened under rigid blocs and closed amid social revolt.',
+    global_context: 'Decolonization and mass politics redistributed power. Technology compressed distance.',
+    period_phases: [
+      { stage: 'Opening', years: '1960-1962', headline: 'Old Orders Strain', description: 'Postwar systems came under pressure.' },
+      { stage: 'Pivot', years: '1963-1967', headline: 'Movements Break Through', description: 'War and protest accelerated political change.' },
+      { stage: 'Outcome', years: '1968-1969', headline: 'Authority Loses Ground', description: 'Revolt and reform altered the next decade.' },
+    ],
+    global_signals: {
+      war_intensity: 'High',
+      political_fragmentation: 'Rising',
+      economic_pressure: 'Moderate',
+      trade_activity: 'Rising',
+      ideological_tension: 'Critical',
+    },
+    cross_region: {
+      contrast: 'Decolonization expanded sovereignty while Cold War blocs constrained it.',
+      tensions: [{ regions: ['europe', 'asia'], note: 'Ideological rivalry linked regional conflicts.' }],
+    },
+    regions: Object.fromEntries(['europe', 'asia', 'namerica', 'africa'].map(region => [
+      region,
+      {
+        state: 'Constraint to challenge',
+        thesis_headline: 'Authority Met Organized Resistance',
+        thesis_argument: 'Institutions lost control as social movements widened political participation.',
+        events: [
+          { year: '1960-1963', title: `${region} opening shift`, description: 'An opening development changed regional power.', rank: 'primary' },
+          { year: '1968-1969', title: `${region} closing shift`, description: 'A later development redirected the region.', rank: 'secondary' },
+        ],
+        key_figures: ['Figure One', 'Figure Two'],
+        significance: 'The transformation shaped the following decade.',
+      },
+    ])),
   };
 }
 
@@ -143,6 +184,58 @@ test('ancient prompt uses era-adjusted global regions and a smaller event budget
   assert.equal(profile.id, 'ancient');
   assert.equal(profile.regions.length, 5);
   assert.equal(res._status, 200);
+});
+
+test('period endpoint samples chronologies and owns the change-over-time prompt', async () => {
+  const payload = validPeriodPayload();
+  globalThis.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.includes('wikipedia.org')) {
+      if (value.includes('prop=sections')) {
+        return jsonResponse({
+          parse: { title: 'sample', sections: [{ index: '2', line: 'Events' }] },
+        });
+      }
+      return jsonResponse({
+        parse: {
+          wikitext: '=== January ===\n* [[January 1]] - [[Sample Event]] changes the political landscape across regions.',
+        },
+      });
+    }
+
+    const forwarded = JSON.parse(options.body);
+    assert.equal(forwarded.max_tokens, 3000);
+    assert.match(forwarded.messages[0].content, /Period: 1960-1969 CE/);
+    assert.match(forwarded.messages[0].content, /Opening, Pivot, Outcome/);
+    assert.match(forwarded.messages[0].content, /Analyze the whole world rather than fixating/);
+    return jsonResponse({ content: [{ text: JSON.stringify(payload) }] });
+  };
+
+  const { req, res } = makeMocks({ startYear: 1960, endYear: 1969 });
+  await periodHandler(req, res);
+
+  assert.equal(res._status, 200);
+  assert.equal(res._headers['X-HistoryLens-Grounding'], 'wikipedia');
+  const sources = JSON.parse(decodeURIComponent(res._headers['X-HistoryLens-Sources']));
+  assert.equal(sources.length, 5);
+  const profile = JSON.parse(decodeURIComponent(res._headers['X-HistoryLens-Region-Profile']));
+  assert.equal(profile.id, 'modern');
+});
+
+test('period sampling is bounded and handles the missing year zero', () => {
+  assert.deepEqual(sampleHistoricalYears(1960, 1969), [1960, 1962, 1965, 1967, 1969]);
+  assert.deepEqual(sampleHistoricalYears(-2, 2), [-2, -1, 1, 2]);
+});
+
+test('period endpoint rejects reversed and oversized ranges', async () => {
+  const reversed = makeMocks({ startYear: 1969, endYear: 1960 });
+  await periodHandler(reversed.req, reversed.res);
+  assert.equal(reversed.res._status, 400);
+
+  const oversized = makeMocks({ startYear: 1900, endYear: 1925 });
+  await periodHandler(oversized.req, oversized.res);
+  assert.equal(oversized.res._status, 400);
+  assert.match(oversized.res._body.error, /at most 25 years/i);
 });
 
 test('curated 2020 returns without Anthropic or Wikipedia access', async () => {

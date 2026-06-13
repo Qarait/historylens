@@ -6,6 +6,21 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.6.0] - 2026-06-14
+
+### Added
+- Decade and custom-period analysis for ranges of up to 25 years.
+- A three-stage Opening, Pivot, and Outcome arc for explaining change over time.
+- Two ranked regional turning points using the adaptive region profile appropriate to the period.
+- Shareable period URLs and notable-period shortcuts.
+- Sampled chronology grounding from up to five representative years.
+
+### Performance
+- Each period uses one model request rather than one request per year.
+- Period results are cached for the browser session and use a bounded 3,000-token response budget.
+
+---
+
 ## [1.5.0] — 2026-06-13
 
 ### Added

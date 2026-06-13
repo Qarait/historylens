@@ -100,6 +100,36 @@ function historyFor(year, profile) {
   };
 }
 
+function periodFor(startYear, endYear, profile) {
+  return {
+    period_label: `${startYear}-${endYear} CE`,
+    era_description: 'A Period of Structural Change',
+    hook_moment: 'The period opened under established orders and closed after power shifted across regions.',
+    global_context: 'Political movements and economic pressures changed the global balance. Regional outcomes diverged.',
+    period_phases: [
+      { stage: 'Opening', years: String(startYear), headline: 'Old Orders Hold', description: 'Established systems defined the opening conditions.' },
+      { stage: 'Pivot', years: `${startYear + 2}-${endYear - 1}`, headline: 'Pressure Breaks Through', description: 'A cluster of turning points accelerated change.' },
+      { stage: 'Outcome', years: String(endYear), headline: 'A New Balance Emerges', description: 'The period closed with altered institutions and alliances.' },
+    ],
+    global_signals: historyData.global_signals,
+    cross_region: historyData.cross_region,
+    regions: Object.fromEntries(profile.regions.map(region => [
+      region.id,
+      {
+        state: 'Stability to disruption',
+        thesis_headline: 'Power Shifted Across Institutions',
+        thesis_argument: 'The region moved from inherited constraints toward a changed political order.',
+        events: [
+          { year: String(startYear), title: `${region.label} opening shift`, description: 'An opening development shaped the regional trajectory.', rank: 'primary' },
+          { year: String(endYear), title: `${region.label} outcome`, description: 'A closing development revealed the period result.', rank: 'secondary' },
+        ],
+        key_figures: ['Figure One', 'Figure Two'],
+        significance: 'The period redirected the region beyond its closing year.',
+      },
+    ])),
+  };
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/history', async route => {
     const requestBody = route.request().postDataJSON();
@@ -136,6 +166,28 @@ test.beforeEach(async ({ page }) => {
       contentType: 'application/json',
       headers: historyHeaders,
       body: JSON.stringify({ content: [{ text }] }),
+    });
+  });
+
+  await page.route('**/api/period', async route => {
+    const requestBody = route.request().postDataJSON();
+    expect(Object.keys(requestBody).sort()).toEqual(['endYear', 'startYear']);
+    const midpoint = Math.trunc((requestBody.startYear + requestBody.endYear) / 2);
+    const profile = midpoint <= 500 ? ancientProfile : modernProfile;
+    const responseData = periodFor(requestBody.startYear, requestBody.endYear, profile);
+    const sources = [requestBody.startYear, midpoint, requestBody.endYear].map(year => ({
+      name: String(year),
+      url: `https://en.wikipedia.org/wiki/${year}`,
+    }));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: {
+        'X-HistoryLens-Grounding': 'wikipedia',
+        'X-HistoryLens-Sources': encodeURIComponent(JSON.stringify(sources)),
+        'X-HistoryLens-Region-Profile': encodeURIComponent(JSON.stringify(profile)),
+      },
+      body: JSON.stringify({ content: [{ text: JSON.stringify(responseData) }] }),
     });
   });
 
@@ -254,4 +306,57 @@ test('compares ancient and modern region systems without overflow', async ({ pag
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth
   );
   expect(hasOverflow).toBe(false);
+});
+
+test('explores a decade as a change-over-time view', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#periodModeBtn').click();
+  await page.locator('#periodStartInput').fill('1960');
+  await page.locator('#periodEndInput').fill('1969');
+  await page.locator('#periodSearchBtn').click();
+
+  await expect(page.locator('#resultsYear')).toHaveText('1960-1969 CE');
+  await expect(page.locator('.period-phase')).toHaveCount(3);
+  await expect(page.locator('.period-phase-stage')).toHaveText(['Opening', 'Pivot', 'Outcome']);
+  await expect(page.locator('.region-card')).toHaveCount(4);
+  await expect(page.locator('.event-item')).toHaveCount(8);
+  await expect(page.locator('.events-list').locator('..').locator('.section-title')).toHaveText([
+    'Key Turning Points',
+    'Key Turning Points',
+    'Key Turning Points',
+    'Key Turning Points',
+  ]);
+  await expect(page.locator('#historyGrounding a')).toHaveCount(3);
+  await expect(page).toHaveURL(/start=1960&end=1969/);
+  await expect(page.locator('#keyEventsOutput')).toBeEmpty();
+});
+
+test('uses adaptive regions for an ancient period on mobile without overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?start=-44&end=-31');
+
+  await expect(page.locator('.period-phase')).toHaveCount(3);
+  await expect(page.locator('.region-card')).toHaveCount(5);
+  await expect(page.locator('.event-item')).toHaveCount(10);
+  await expect(page.locator('#regionProfileNote')).toContainText('Ancient world regions');
+  const hasOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+  );
+  expect(hasOverflow).toBe(false);
+});
+
+test('rejects a period longer than 25 years before making a request', async ({ page }) => {
+  let periodRequests = 0;
+  await page.route('**/api/period', route => {
+    periodRequests++;
+    return route.continue();
+  });
+  await page.goto('/');
+  await page.locator('#periodModeBtn').click();
+  await page.locator('#periodStartInput').fill('1900');
+  await page.locator('#periodEndInput').fill('1925');
+  await page.locator('#periodSearchBtn').click();
+
+  await expect(page.locator('#errorBox')).toContainText('at most 25 years');
+  expect(periodRequests).toBe(0);
 });
