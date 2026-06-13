@@ -40,6 +40,8 @@ const eventsData = {
   grounding: {
     name: 'Wikipedia contributors',
     url: 'https://en.wikipedia.org/wiki/2020',
+    quality: 'reference',
+    qualityLabel: 'Reference chronology',
   },
   events: Array.from({ length: 7 }, (_, index) => ({
     title: index === 0 ? 'Second Nagorno-Karabakh War' : `Key event ${index + 1}`,
@@ -50,6 +52,14 @@ const eventsData = {
     significance: 'The event produced lasting consequences.',
     source_title: index === 0 ? 'Second Nagorno-Karabakh War' : `Source Event ${index + 1}`,
     source_url: `https://en.wikipedia.org/wiki/Source_Event_${index + 1}`,
+    sources: [{
+      title: index === 0 ? 'Academic study of the Second Nagorno-Karabakh War' : `Academic study ${index + 1}`,
+      url: `https://doi.org/10.1234/history.${index + 1}`,
+      publisher: 'Historical Review',
+      publicationYear: 2024,
+      quality: 'academic',
+      qualityLabel: 'Academic',
+    }],
   })),
 };
 
@@ -142,6 +152,7 @@ test.beforeEach(async ({ page }) => {
       'X-HistoryLens-Grounding': 'wikipedia',
       'X-HistoryLens-Source-Name': 'Wikipedia contributors',
       'X-HistoryLens-Source-Url': `https://en.wikipedia.org/wiki/${requestBody.year}`,
+      'X-HistoryLens-Source-Quality': requestBody.year === 2020 ? 'reviewed' : 'reference',
       'X-HistoryLens-Region-Profile': encodeURIComponent(JSON.stringify(profile)),
       ...(requestBody.year === 2020 ? {
         'X-HistoryLens-Curated': 'true',
@@ -231,10 +242,15 @@ test('explores a year and shows cited key events', async ({ page }) => {
   await expect(page.locator('.region-card')).toHaveCount(4);
   await expect(page.locator('.curated-badge')).toContainText('reviewed 2026-06-13');
   await expect(page.locator('#historyGrounding')).toContainText('Wikipedia contributors');
+  await expect(page.locator('#historyGrounding .source-quality')).toContainText('Reviewed edition');
   await page.locator('.key-events-btn').click();
   await expect(page.locator('.key-event-card')).toHaveCount(7);
   await expect(page.getByRole('heading', { name: 'Second Nagorno-Karabakh War' })).toBeVisible();
   await expect(page.locator('.key-event-source').first()).toBeVisible();
+  await expect(page.locator('.key-event-card').first().locator('.source-quality')).toHaveText([
+    'Reference chronology',
+    'Academic',
+  ]);
   await expect(page.locator('.key-events-attribution')).toContainText('Wikipedia contributors');
 
   await page.locator('.event-check-form input').fill('Nagorno-Karabakh War');

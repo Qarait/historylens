@@ -75,6 +75,8 @@
       return JSON.parse(decodeURIComponent(encoded)).map(source => ({
         name: source.name,
         url: source.url,
+        quality: source.quality || 'reference',
+        qualityLabel: source.qualityLabel || 'Reference chronology',
       }));
     } catch {
       return [];

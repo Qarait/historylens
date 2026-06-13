@@ -12,6 +12,7 @@ import {
 import { buildKeyEventsPrompt } from './_lib/prompts.js';
 import { enforceOrigin, enforceRateLimit } from './_lib/request.js';
 import { getYearGrounding, wikipediaArticleUrl } from './_lib/wikipedia.js';
+import { enrichEventSources } from './_lib/scholarly-sources.js';
 
 export default async function handler(req, res) {
   if (!enforceOrigin(req, res)) return;
@@ -73,13 +74,15 @@ export default async function handler(req, res) {
 
     const parsed = JSON.parse(match[0]);
     validateEventsResponse(parsed, grounding.allowedTitles);
-    parsed.events = parsed.events.map(event => ({
+    parsed.events = await enrichEventSources(parsed.events.map(event => ({
       ...event,
       source_url: wikipediaArticleUrl(event.source_title),
-    }));
+    })));
     parsed.grounding = {
       name: grounding.sourceName,
       url: grounding.yearPageUrl,
+      quality: 'reference',
+      qualityLabel: 'Reference chronology',
     };
 
     return res.status(200).json(parsed);

@@ -72,6 +72,8 @@ export async function getPeriodGrounding(startYear, endYear) {
     sources.push({
       name: grounding.yearPageTitle,
       url: grounding.yearPageUrl,
+      quality: 'reference',
+      qualityLabel: 'Reference chronology',
     });
     contextParts.push(
       `CHRONOLOGY FOR ${grounding.yearPageTitle}:\n${grounding.context.slice(0, MAX_PERIOD_CONTEXT_PER_YEAR)}`

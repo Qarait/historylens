@@ -7,7 +7,7 @@ Enter a year. See what was happening simultaneously across Europe, Asia, the Ame
 **Live Demo:** [historylens-psi.vercel.app](https://historylens-psi.vercel.app)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-c9a84c.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.6.0-16a085.svg)
+![Version](https://img.shields.io/badge/version-1.7.0-16a085.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 ***
@@ -27,6 +27,7 @@ For any year from ancient history to the present, it produces:
 * **Curated verified years**: reviewed editions of high-interest years return instantly without an AI request; 2020 is the first curated edition
 * **Adaptive historical regions**: ancient, medieval, early-modern, and modern searches use region groupings appropriate to their period instead of forcing every year into modern continents
 * **Decade and period views**: explore a custom range of up to 25 years through an opening, pivot, and outcome arc, with two ranked turning points per adaptive region
+* **Scholarship-grade source discovery**: key events retain a chronology anchor and add quality-labeled academic, archival, museum, institutional, or reference sources when authoritative matches are available
 
 ***
 
@@ -124,8 +125,13 @@ page and supplies selected excerpts as factual anchors. The seven-event endpoint
 accepts only source titles present in that chronology and converts them into
 verified article links before returning data to the browser.
 
-Wikipedia is a starting point, not a substitute for primary or specialist
-sources. The interface keeps that distinction visible in a compact attribution.
+Wikipedia remains the chronology anchor rather than being presented as a
+specialist source. Key-event results then search Crossref metadata and
+authoritative links associated with the event, retaining only sources that fit
+explicit academic, archival, museum, institutional, or reference rules. Every
+link is labeled by source type, and enrichment failure falls back to the
+chronology without blocking the result. These links are research leads, not an
+automatic claim-by-claim verification system.
 
 ### Why `innerHTML` is not used for AI output
 

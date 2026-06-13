@@ -47,6 +47,7 @@ export default async function handler(req, res) {
     res.setHeader?.('X-HistoryLens-Grounding', 'wikipedia');
     res.setHeader?.('X-HistoryLens-Source-Name', grounding.sourceName);
     res.setHeader?.('X-HistoryLens-Source-Url', grounding.yearPageUrl);
+    res.setHeader?.('X-HistoryLens-Source-Quality', 'reference');
   } catch (error) {
     console.error('[History Grounding]', error.message);
     res.setHeader?.('X-HistoryLens-Grounding', 'model-only');
@@ -106,6 +107,7 @@ function sendCuratedResponse(res, curated, stream) {
   res.setHeader?.('X-HistoryLens-Grounding', 'wikipedia');
   res.setHeader?.('X-HistoryLens-Source-Name', curated.sourceName);
   res.setHeader?.('X-HistoryLens-Source-Url', curated.sourceUrl);
+  res.setHeader?.('X-HistoryLens-Source-Quality', 'reviewed');
   res.setHeader?.('X-HistoryLens-Curated', 'true');
   res.setHeader?.('X-HistoryLens-Reviewed-At', curated.reviewedAt);
   res.setHeader?.('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');

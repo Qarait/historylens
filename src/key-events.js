@@ -132,13 +132,13 @@
     if (data.grounding?.url) {
       const attribution = document.createElement('div');
       attribution.className = 'key-events-attribution';
-      attribution.append('Chronology grounded with ');
+      attribution.append('Chronology anchor: ');
       const link = document.createElement('a');
       link.href = data.grounding.url;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.textContent = data.grounding.name || 'Wikipedia contributors';
-      attribution.append(link, '. Verify important claims with primary and specialist sources.');
+      attribution.append(link, '. Additional sources are discovery aids; inspect them before formal citation.');
       container.appendChild(attribution);
     }
   }
@@ -174,18 +174,58 @@
     significance.append(label, document.createTextNode(event.significance || ''));
     content.append(meta, title, summary, significance);
 
+    const sources = [];
     if (event.source_url) {
-      const source = document.createElement('a');
-      source.className = 'key-event-source';
-      source.href = event.source_url;
-      source.target = '_blank';
-      source.rel = 'noopener noreferrer';
-      source.textContent = `Source: ${event.source_title || 'Wikipedia'}`;
-      content.appendChild(source);
+      sources.push({
+        title: event.source_title || 'Wikipedia',
+        url: event.source_url,
+        quality: 'reference',
+        qualityLabel: 'Reference chronology',
+      });
     }
+    if (Array.isArray(event.sources)) sources.push(...event.sources);
+    if (sources.length > 0) content.appendChild(buildSourceList(sources));
 
     item.append(number, content);
     return item;
+  }
+
+  function buildSourceList(sources) {
+    const wrap = document.createElement('div');
+    wrap.className = 'key-event-sources';
+    const label = document.createElement('div');
+    label.className = 'key-event-sources-label';
+    label.textContent = 'Research sources';
+    wrap.appendChild(label);
+
+    const seen = new Set();
+    for (const item of sources) {
+      if (!item?.url || seen.has(item.url)) continue;
+      seen.add(item.url);
+      const row = document.createElement('div');
+      row.className = 'key-event-source-row';
+
+      const quality = document.createElement('span');
+      quality.className = `source-quality source-quality-${item.quality || 'reference'}`;
+      quality.textContent = item.qualityLabel || 'Reference';
+
+      const source = document.createElement('a');
+      source.className = 'key-event-source';
+      source.href = item.url;
+      source.target = '_blank';
+      source.rel = 'noopener noreferrer';
+      source.textContent = item.title || item.publisher || 'Open source';
+
+      row.append(quality, source);
+      if (item.publicationYear) {
+        const year = document.createElement('span');
+        year.className = 'key-event-source-year';
+        year.textContent = String(item.publicationYear);
+        row.appendChild(year);
+      }
+      wrap.appendChild(row);
+    }
+    return wrap;
   }
 
   function renderError(container, year, error, formatYear) {

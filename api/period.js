@@ -51,6 +51,7 @@ export default async function handler(req, res) {
     const grounding = await getPeriodGrounding(startYear, endYear);
     groundingContext = grounding.context;
     res.setHeader?.('X-HistoryLens-Grounding', 'wikipedia');
+    res.setHeader?.('X-HistoryLens-Source-Quality', 'reference');
     res.setHeader?.(
       'X-HistoryLens-Sources',
       encodeURIComponent(JSON.stringify(grounding.sources))

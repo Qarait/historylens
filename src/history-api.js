@@ -202,6 +202,10 @@
     return {
       name: response.headers.get('X-HistoryLens-Source-Name') || 'Wikipedia contributors',
       url,
+      quality: response.headers.get('X-HistoryLens-Source-Quality') || 'reference',
+      qualityLabel: response.headers.get('X-HistoryLens-Curated') === 'true'
+        ? 'Reviewed edition'
+        : 'Reference chronology',
       curated: response.headers.get('X-HistoryLens-Curated') === 'true',
       reviewedAt: response.headers.get('X-HistoryLens-Reviewed-At') || '',
     };

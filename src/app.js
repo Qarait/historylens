@@ -1014,15 +1014,22 @@ function renderHistoryGrounding(items) {
     container.append(badge, document.createTextNode(' '));
   }
 
-  container.append('Grounded chronology: ');
+  container.append('Evidence: ');
   unique.forEach((item, index) => {
     if (index > 0) container.append(' · ');
+    const citation = document.createElement('span');
+    citation.className = 'source-citation';
     const link = document.createElement('a');
     link.href = item.url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.textContent = item.name;
-    container.appendChild(link);
+    citation.appendChild(link);
+    const quality = document.createElement('span');
+    quality.className = `source-quality source-quality-${item.quality || 'reference'}`;
+    quality.textContent = item.qualityLabel || 'Reference chronology';
+    citation.appendChild(quality);
+    container.appendChild(citation);
   });
 }
 

@@ -11,6 +11,10 @@ const { default: checkEventHandler } = await import('../api/check-event.js');
 const { enforceRateLimit } = await import('../api/_lib/request.js');
 const { getRegionProfile } = await import('../api/_lib/region-profiles.js');
 const { sampleHistoricalYears } = await import('../api/_lib/wikipedia.js');
+const {
+  classifySourceUrl,
+  getResearchSources,
+} = await import('../api/_lib/scholarly-sources.js');
 const originalFetch = globalThis.fetch;
 
 function makeMocks(body, method = 'POST') {
@@ -291,7 +295,28 @@ test('events endpoint returns seven verified citations', async () => {
   payload.events.forEach(event => { event.date = '2021'; });
 
   globalThis.fetch = async (url, options = {}) => {
-    if (String(url).includes('wikipedia.org')) return responses.shift();
+    const value = String(url);
+    if (value.includes('prop=externallinks')) {
+      return jsonResponse({
+        parse: { externallinks: ['https://www.archives.gov/research/sample'] },
+      });
+    }
+    if (value.includes('wikipedia.org')) return responses.shift();
+    if (value.includes('api.crossref.org')) {
+      const query = new URL(value).searchParams.get('query.bibliographic');
+      const title = query.replace(/\s+2021$/, '');
+      return jsonResponse({
+        message: {
+          items: [{
+            DOI: '10.1234/history.test',
+            title: [title],
+            publisher: 'Historical Review',
+            published: { 'date-parts': [[2024]] },
+            score: 80,
+          }],
+        },
+      });
+    }
 
     const forwarded = JSON.parse(options.body);
     assert.match(forwarded.messages[0].content, /Use only events explicitly supported/);
@@ -309,7 +334,36 @@ test('events endpoint returns seven verified citations', async () => {
     res._body.events[0].source_url,
     'https://en.wikipedia.org/wiki/Source_Event_1'
   );
+  assert.deepEqual(
+    res._body.events[0].sources.map(source => source.quality),
+    ['archive', 'academic']
+  );
+  assert.equal(res._body.grounding.qualityLabel, 'Reference chronology');
   assert.match(res._body.grounding.url, /2021$/);
+});
+
+test('source quality rules classify scholarly and authoritative domains', () => {
+  assert.deepEqual(classifySourceUrl('https://www.archives.gov/research/test'), {
+    quality: 'archive',
+    qualityLabel: 'Archive',
+  });
+  assert.deepEqual(classifySourceUrl('https://history.ox.ac.uk/article'), {
+    quality: 'academic',
+    qualityLabel: 'Academic',
+  });
+  assert.deepEqual(classifySourceUrl('https://www.who.int/news/item'), {
+    quality: 'primary',
+    qualityLabel: 'Primary / institutional',
+  });
+  assert.equal(classifySourceUrl('https://example.com/blog'), null);
+});
+
+test('scholarly enrichment degrades cleanly when discovery is unavailable', async () => {
+  globalThis.fetch = async () => {
+    throw new Error('discovery unavailable');
+  };
+  const sources = await getResearchSources('Unique unavailable source test', '1999');
+  assert.deepEqual(sources, []);
 });
 
 test('events endpoint rejects a source not present in chronology', async () => {

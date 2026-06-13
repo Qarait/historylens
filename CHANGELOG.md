@@ -6,6 +6,21 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.7.0] - 2026-06-14
+
+### Added
+- Quality-labeled research sources for the seven-event view.
+- Academic discovery through Crossref DOI metadata.
+- Curated domain classification for archives, museums, universities, reference works, and public institutions.
+- Compact evidence labels for dashboard and period chronology sources.
+
+### Reliability
+- Source enrichment runs in parallel with short timeouts and a 24-hour server cache.
+- Unavailable enrichment falls back to the reference chronology without blocking historical results.
+- Unclassified sites, generic blogs, DOI-only duplicates, and catalog-only authority records are excluded.
+
+---
+
 ## [1.6.0] - 2026-06-14
 
 ### Added
