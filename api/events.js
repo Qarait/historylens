@@ -33,6 +33,9 @@ export default async function handler(req, res) {
   let grounding;
   try {
     grounding = await getYearGrounding(year);
+    res.setHeader?.('X-HistoryLens-Grounding', 'wikipedia');
+    res.setHeader?.('X-HistoryLens-Source-Name', grounding.sourceName);
+    res.setHeader?.('X-HistoryLens-Source-Url', grounding.yearPageUrl);
   } catch (error) {
     console.error('[Events Grounding]', error);
     return res.status(503).json({

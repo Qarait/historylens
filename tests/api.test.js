@@ -136,6 +136,7 @@ test('events endpoint returns seven verified citations', async () => {
 
   assert.equal(res._status, 200);
   assert.equal(res._body.events.length, 7);
+  assert.equal(res._headers['X-HistoryLens-Grounding'], 'wikipedia');
   assert.equal(
     res._body.events[0].source_url,
     'https://en.wikipedia.org/wiki/Source_Event_1'
