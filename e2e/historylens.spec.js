@@ -243,6 +243,18 @@ test('explores a year and shows cited key events', async ({ page }) => {
   await expect(page.locator('.curated-badge')).toContainText('reviewed 2026-06-13');
   await expect(page.locator('#historyGrounding')).toContainText('Wikipedia contributors');
   await expect(page.locator('#historyGrounding .source-quality')).toContainText('Reviewed edition');
+  await expect(page.locator('.historical-map-panel')).toHaveCount(1);
+  await expect(page.locator('.historical-map-node')).toHaveCount(4);
+  await expect(page.locator('.historical-map-control')).toHaveText([
+    'Primary',
+    'Supporting 1',
+    'Supporting 2',
+  ]);
+  await page.locator('.historical-map-node[aria-label^="Asia:"]').click();
+  await expect(page.locator('.historical-map-detail-region')).toHaveText('Asia');
+  await expect(page.locator('.historical-map-detail-title')).toHaveText('Asia event 1');
+  await page.locator('.historical-map-detail-action').click();
+  await expect(page.locator('.region-card[data-region="asia"]')).toHaveClass(/map-highlight/);
   await page.locator('.key-events-btn').click();
   await expect(page.locator('.key-event-card')).toHaveCount(7);
   await expect(page.getByRole('heading', { name: 'Second Nagorno-Karabakh War' })).toBeVisible();
@@ -284,6 +296,8 @@ test('compares a curated year with a generated year', async ({ page }) => {
 
   await expect(page.locator('.compare-block')).toHaveCount(2);
   await expect(page.locator('.region-card')).toHaveCount(8);
+  await expect(page.locator('.historical-map-panel')).toHaveCount(2);
+  await expect(page.locator('.historical-map-node')).toHaveCount(8);
   await expect(page.locator('.curated-badge')).toHaveCount(1);
   await expect(page.locator('#historyGrounding a')).toHaveCount(2);
 });
@@ -303,6 +317,11 @@ test('uses era-adjusted regions for an ancient year', async ({ page }) => {
   ]);
   await expect(page.locator('#regionProfileNote')).toContainText('Ancient world regions');
   await expect(page.locator('.event-item')).toHaveCount(10);
+  await expect(page.locator('.historical-map-node')).toHaveCount(5);
+  await expect(page.locator('.historical-map-control')).toHaveText([
+    'Primary',
+    'Supporting 1',
+  ]);
 });
 
 test('compares ancient and modern region systems without overflow', async ({ page }) => {
@@ -318,6 +337,8 @@ test('compares ancient and modern region systems without overflow', async ({ pag
     'Ancient world regions',
     'Modern continental regions',
   ]);
+  await expect(page.locator('.historical-map-panel')).toHaveCount(2);
+  await expect(page.locator('.historical-map-node')).toHaveCount(9);
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth
   );
@@ -343,6 +364,12 @@ test('explores a decade as a change-over-time view', async ({ page }) => {
     'Key Turning Points',
   ]);
   await expect(page.locator('#historyGrounding a')).toHaveCount(3);
+  await expect(page.locator('.historical-map-panel')).toHaveCount(1);
+  await expect(page.locator('.historical-map-node')).toHaveCount(4);
+  await expect(page.locator('.historical-map-control')).toHaveText([
+    'Defining shift',
+    'Supporting shift',
+  ]);
   await expect(page).toHaveURL(/start=1960&end=1969/);
   await expect(page.locator('#keyEventsOutput')).toBeEmpty();
 });
@@ -355,6 +382,7 @@ test('uses adaptive regions for an ancient period on mobile without overflow', a
   await expect(page.locator('.region-card')).toHaveCount(5);
   await expect(page.locator('.event-item')).toHaveCount(10);
   await expect(page.locator('#regionProfileNote')).toContainText('Ancient world regions');
+  await expect(page.locator('.historical-map-node')).toHaveCount(5);
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth
   );

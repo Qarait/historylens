@@ -6,6 +6,20 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.8.0] - 2026-06-14
+
+### Added
+- Lightweight historical activity maps for year, period, and comparison results.
+- Interactive adaptive-region nodes synchronized with the matching regional analysis cards.
+- Ranked event controls and cross-region relationship links.
+- Explicit cartographic guidance distinguishing analytical geography from reconstructed territorial borders.
+
+### Performance
+- Maps use inline SVG and existing response data, adding no map SDK, tile service, dependency, or browser request.
+- Streaming year maps update progressively as regional analysis arrives.
+
+---
+
 ## [1.7.0] - 2026-06-14
 
 ### Added

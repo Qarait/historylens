@@ -588,10 +588,20 @@ async function exploreSingle(year) {
       onRegion: (id, regionData) => {
         upsertRegionCard(id, regionData);
         accumulatedData.regions[id] = regionData;
+        renderHistoricalMaps([{
+          label: formatYear(year),
+          profile: activeRegionProfile,
+          data: accumulatedData,
+        }]);
       },
       onCrossRegion: (crossData) => {
         renderCrossRegion(crossData);
         accumulatedData.cross_region = crossData;
+        renderHistoricalMaps([{
+          label: formatYear(year),
+          profile: activeRegionProfile,
+          data: accumulatedData,
+        }]);
       },
       onComplete: (fullData) => {
         fullData.__grounding = accumulatedData.__grounding || null;
@@ -631,6 +641,7 @@ function initResultsContainer(year) {
   renderRegionProfileNote(activeRegionProfile);
   document.getElementById('results').classList.add('active');
   document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
+  document.getElementById('historicalMapOutput').innerHTML = '';
   HistoryLensKeyEvents.renderControls([year], formatYear);
   HistoryLensEventChecker.renderControls([year], formatYear);
   
@@ -834,6 +845,11 @@ function renderSingle(year, data) {
     output.appendChild(buildCrossRegionBlock(data.cross_region, profile.regions));
   }
   renderHistoryGrounding([data.__grounding]);
+  renderHistoricalMaps([{
+    label: formatYear(year),
+    profile,
+    data,
+  }]);
   HistoryLensKeyEvents.renderControls([year], formatYear);
   HistoryLensEventChecker.renderControls([year], formatYear);
 
@@ -893,6 +909,12 @@ function renderPeriod(startYear, endYear, data) {
   }
 
   renderHistoryGrounding(data.__grounding || []);
+  renderHistoricalMaps([{
+    label: formatPeriod(startYear, endYear),
+    profile,
+    data,
+    period: true,
+  }]);
   document.getElementById('keyEventsOutput').innerHTML = '';
   document.getElementById('eventCheckOutput').innerHTML = '';
   document.getElementById('feedbackBar').style.display = 'flex';
@@ -952,6 +974,7 @@ function renderCompare(year1, data1, year2, data2) {
   output.innerHTML = '';
 
   const wrapper = document.createElement('div');
+  const mapViews = [];
   for (const { year, data } of [{ year: year1, data: data1 }, { year: year2, data: data2 }]) {
     const profile = data.__regionProfile || {
       id: 'modern',
@@ -960,6 +983,7 @@ function renderCompare(year1, data1, year2, data2) {
     };
     const block = document.createElement('div');
     block.className = 'compare-block';
+    block.dataset.mapLabel = String(year);
 
     const label = document.createElement('div');
     label.className = 'compare-year-label';
@@ -979,8 +1003,16 @@ function renderCompare(year1, data1, year2, data2) {
     }
     block.appendChild(grid);
     wrapper.appendChild(block);
+    mapViews.push({
+      label: formatYear(year),
+      profile,
+      data,
+      compare: true,
+      cardSelector: `.compare-block[data-map-label="${year}"]`,
+    });
   }
   output.appendChild(wrapper);
+  renderHistoricalMaps(mapViews);
   HistoryLensKeyEvents.renderControls([year1, year2], formatYear);
   HistoryLensEventChecker.renderControls([year1, year2], formatYear);
 
@@ -1031,6 +1063,11 @@ function renderHistoryGrounding(items) {
     citation.appendChild(quality);
     container.appendChild(citation);
   });
+}
+
+function renderHistoricalMaps(views) {
+  const container = document.getElementById('historicalMapOutput');
+  HistoryLensHistoricalMap.render(container, views);
 }
 
 function renderRegionProfileNote(profile) {
@@ -1616,6 +1653,7 @@ function hideResults() {
   document.getElementById('signalsBar').classList.remove('visible');
   document.getElementById('hookMoment').classList.remove('visible');
   document.getElementById('periodArc').classList.remove('visible');
+  document.getElementById('historicalMapOutput').innerHTML = '';
   renderHistoryGrounding([]);
   renderRegionProfileNote(null);
   document.getElementById('feedbackBar').style.display = 'none';
