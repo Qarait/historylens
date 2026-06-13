@@ -17,7 +17,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ### Performance
 - Each period uses one model request rather than one request per year.
-- Period results are cached for the browser session and use a bounded 3,000-token response budget.
+- Period results are cached for the browser session and use a bounded 3,400-token response budget.
 
 ---
 

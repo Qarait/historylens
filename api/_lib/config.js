@@ -3,7 +3,7 @@ export const MODEL = 'claude-haiku-4-5-20251001';
 export const MIN_YEAR = -3000;
 export const MAX_YEAR = 2026;
 export const HISTORY_MAX_TOKENS = 2800;
-export const PERIOD_MAX_TOKENS = 3000;
+export const PERIOD_MAX_TOKENS = 3400;
 export const EVENTS_MAX_TOKENS = 2400;
 export const MAX_PERIOD_YEARS = 25;
 

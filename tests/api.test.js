@@ -204,10 +204,12 @@ test('period endpoint samples chronologies and owns the change-over-time prompt'
     }
 
     const forwarded = JSON.parse(options.body);
-    assert.equal(forwarded.max_tokens, 3000);
+    assert.equal(forwarded.max_tokens, 3400);
     assert.match(forwarded.messages[0].content, /Period: 1960-1969 CE/);
     assert.match(forwarded.messages[0].content, /Opening, Pivot, Outcome/);
     assert.match(forwarded.messages[0].content, /Analyze the whole world rather than fixating/);
+    assert.match(forwarded.messages[0].content, /exactly two objects/);
+    assert.match(forwarded.messages[0].content, /Never use markdown fences/);
     return jsonResponse({ content: [{ text: JSON.stringify(payload) }] });
   };
 

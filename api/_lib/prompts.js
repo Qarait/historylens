@@ -85,7 +85,7 @@ export function buildPeriodPrompt(
   const profile = regionProfile;
   const regionIds = profile.regions.map(region => region.id);
   const regionSchema = profile.regions
-    .map(region => `    "${region.id}": { "state":"opening to closing trajectory in 3-5 words","thesis_headline":"4-6 word verdict","thesis_argument":"1 analytical sentence about change across the period","events":[${eventSchema(2)}],"key_figures":["...","...","..."],"significance":"1 sentence on the period's lasting regional consequence" }`)
+    .map(region => `    "${region.id}": { "state":"3-5 words","thesis_headline":"4-6 words","thesis_argument":"max 22 words","events":[{"year":"...","title":"...","description":"max 20 words","rank":"primary"},{"year":"...","title":"...","description":"max 20 words","rank":"secondary"}],"key_figures":["...","..."],"significance":"max 20 words" }`)
     .join(',\n');
   const tensionSchema = [
     [regionIds[0], regionIds[1]],
@@ -108,6 +108,14 @@ ANALYTICAL GOAL:
 - Use this era-adjusted regional frame: ${profile.label}.
 - Treat regions according to the political and cultural worlds of the period, not modern borders.
 
+BREVITY AND SHAPE:
+- The complete response must stay concise enough to finish comfortably.
+- Each region must contain ONLY the two event objects shown in the schema: one primary and one secondary.
+- Never add a third event, a second primary event, or any field not shown in the schema.
+- Each event must belong geographically to its assigned region and may not be repeated in another region.
+- Event descriptions: maximum 20 words. Thesis arguments: maximum 22 words. Significance: maximum 20 words.
+- Phase descriptions: maximum 24 words. Hook and global context: maximum two short sentences each.
+
 ACCURACY RULES:
 - Every named turning point must fall between ${periodLabel}, inclusive.
 - Use exact years or bounded year ranges for turning points.
@@ -122,9 +130,9 @@ SCHEMA:
   "hook_moment": "1-2 punchy sentences contrasting the beginning and end of the period across regions.",
   "global_context": "2 analytical sentences explaining the period's main transformation.",
   "period_phases": [
-    { "stage": "Opening", "years": "bounded years within the period", "headline": "3-6 words", "description": "1 sentence" },
-    { "stage": "Pivot", "years": "bounded years within the period", "headline": "3-6 words", "description": "1 sentence" },
-    { "stage": "Outcome", "years": "bounded years within the period", "headline": "3-6 words", "description": "1 sentence" }
+    { "stage": "Opening", "years": "bounded years", "headline": "3-6 words", "description": "max 24 words" },
+    { "stage": "Pivot", "years": "bounded years", "headline": "3-6 words", "description": "max 24 words" },
+    { "stage": "Outcome", "years": "bounded years", "headline": "3-6 words", "description": "max 24 words" }
   ],
   "global_signals": {
     "war_intensity": "Low|Moderate|High|Critical|Rising|Declining|Stable|Collapsing",
@@ -147,8 +155,9 @@ ${regionSchema}
 HARD CONSTRAINTS:
 - Return exactly these region IDs in this order: ${regionIds.join(', ')}.
 - Return exactly three period phases: Opening, Pivot, Outcome.
-- Return exactly two turning points per region: one primary and one secondary.
+- Each events array must contain exactly two objects: first rank primary, second rank secondary.
 - global_signals values must be one of Low, Moderate, High, Critical, Rising, Declining, Stable, Collapsing.
+- Begin with { and end with }. Never use markdown fences.
 - Return JSON only.`;
 }
 

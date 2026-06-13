@@ -5,6 +5,7 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_CACHE_YEARS = 32;
 const MAX_SNIPPETS = 72;
 const MAX_CONTEXT_CHARS = 36000;
+const MAX_PERIOD_CONTEXT_PER_YEAR = 6000;
 const cache = new Map();
 
 export async function getYearGrounding(year) {
@@ -73,7 +74,7 @@ export async function getPeriodGrounding(startYear, endYear) {
       url: grounding.yearPageUrl,
     });
     contextParts.push(
-      `CHRONOLOGY FOR ${grounding.yearPageTitle}:\n${grounding.context}`
+      `CHRONOLOGY FOR ${grounding.yearPageTitle}:\n${grounding.context.slice(0, MAX_PERIOD_CONTEXT_PER_YEAR)}`
     );
   });
 
