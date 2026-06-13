@@ -25,12 +25,11 @@ const CONFIG = {
 };
 
 /* ── REGION DEFINITIONS ──────────────────────────────────────────────────── */
-const REGIONS = [
-  { id: 'europe',   label: 'Europe',       sub: 'Western & Eastern Europe',        icon: '🏰' },
-  { id: 'asia',     label: 'Asia',          sub: 'East, South & Middle East',       icon: '🏯' },
-  { id: 'namerica', label: 'The Americas',  sub: 'North, Central & South America',  icon: '🦅' },
-  { id: 'africa',   label: 'Africa',        sub: 'Sub-Saharan & North Africa',      icon: '🌍' },
-  { id: 'oceania',  label: 'Oceania',       sub: 'Pacific, Australia & New Zealand',icon: '🌊' },
+const DEFAULT_REGIONS = [
+  { id: 'europe', label: 'Europe', sub: 'Western & Eastern Europe', icon: '🏰', color: '#c0392b' },
+  { id: 'asia', label: 'Asia', sub: 'East, South, Central Asia & Middle East', icon: '🏯', color: '#16a085' },
+  { id: 'namerica', label: 'The Americas', sub: 'North, Central & South America', icon: '🌎', color: '#2980b9' },
+  { id: 'africa', label: 'Africa', sub: 'Sub-Saharan & North Africa', icon: '🌍', color: '#d4ac0d' },
 ];
 
 /* ── STATIC CONTENT ──────────────────────────────────────────────────────── */
@@ -138,6 +137,11 @@ let currentYear      = null;
 let hookIndex        = 0;
 let hookTimer        = null;
 let slowWarningTimer = null;
+let activeRegionProfile = {
+  id: 'modern',
+  label: 'Modern continental regions',
+  regions: DEFAULT_REGIONS,
+};
 
 let timelineYears    = loadStorage(CONFIG.storageKeyTimeline, []);
 let savedComparisons = loadStorage(CONFIG.storageKeyComps,    []);
@@ -464,6 +468,10 @@ async function exploreSingle(year) {
   
   try {
     await HistoryLensApi.fetchHistoryStream(year, {
+      onRegionProfile: (profile) => {
+        activeRegionProfile = profile;
+        accumulatedData.__regionProfile = profile;
+      },
       onGrounding: (grounding) => {
         accumulatedData.__grounding = grounding;
         if (hasStartedRendering) renderHistoryGrounding([grounding]);
@@ -508,6 +516,7 @@ async function exploreSingle(year) {
       },
       onComplete: (fullData) => {
         fullData.__grounding = accumulatedData.__grounding || null;
+        fullData.__regionProfile = accumulatedData.__regionProfile || activeRegionProfile;
         if (CONFIG.cacheEnabled) cache.set(year, fullData);
         addToSearchHistory(year, fullData.era_description || '');
         addToTimeline(year, fullData.era_description || '');
@@ -538,6 +547,7 @@ function initResultsContainer(year) {
   document.getElementById('resultsEra').textContent = 'Analyzing...';
   document.getElementById('hookText').innerHTML = '';
   renderHistoryGrounding([]);
+  renderRegionProfileNote(activeRegionProfile);
   document.getElementById('results').classList.add('active');
   document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
   HistoryLensKeyEvents.renderControls([year], formatYear);
@@ -557,7 +567,8 @@ function upsertRegionCard(id, regionData) {
   const grid = document.querySelector('#regionsOutput .regions-grid');
   if (!grid) return;
 
-  const mapping = REGIONS.find(r => r.id === id);
+  const regions = activeRegionProfile.regions || DEFAULT_REGIONS;
+  const mapping = regions.find(r => r.id === id);
   if (!mapping) return;
 
   // Check if card already exists
@@ -567,14 +578,14 @@ function upsertRegionCard(id, regionData) {
   if (card) {
     grid.replaceChild(newCard, card);
   } else {
-    // Preserve REGIONS order if possible
-    const index = REGIONS.findIndex(r => r.id === id);
+    // Preserve the active profile's region order.
+    const index = regions.findIndex(r => r.id === id);
     const existingCards = Array.from(grid.querySelectorAll('.region-card'));
     let inserted = false;
     
     for (const existing of existingCards) {
       const existingId = existing.dataset.region;
-      const existingIndex = REGIONS.findIndex(r => r.id === existingId);
+      const existingIndex = regions.findIndex(r => r.id === existingId);
       if (existingIndex > index) {
         grid.insertBefore(newCard, existing);
         inserted = true;
@@ -593,7 +604,7 @@ function renderCrossRegion(crossData) {
   if (existing) existing.remove();
   
   if (crossData) {
-    output.appendChild(buildCrossRegionBlock(crossData));
+    output.appendChild(buildCrossRegionBlock(crossData, activeRegionProfile.regions));
   }
 }
 
@@ -638,6 +649,12 @@ function handleFetchError(err) {
 
 /* ── RENDER — SINGLE YEAR ────────────────────────────────────────────────── */
 function renderSingle(year, data) {
+  const profile = data.__regionProfile || {
+    id: 'modern',
+    label: 'Modern continental regions',
+    regions: DEFAULT_REGIONS,
+  };
+  activeRegionProfile = profile;
   // Safe: textContent for all AI-generated plain text
   document.getElementById('resultsYear').textContent = formatYear(year);
   document.getElementById('resultsEra').textContent  = data.era_description || '';
@@ -657,19 +674,20 @@ function renderSingle(year, data) {
   }
 
   renderSignals(data.global_signals);
+  renderRegionProfileNote(profile);
 
   const output = document.getElementById('regionsOutput');
   output.innerHTML = '';
   const grid = document.createElement('div');
   grid.className = 'regions-grid';
-  for (const region of REGIONS) {
+  for (const region of profile.regions) {
     const regionData = data.regions?.[region.id];
     if (regionData) grid.appendChild(buildCard(region, regionData));
   }
   output.appendChild(grid);
 
   if (data.cross_region) {
-    output.appendChild(buildCrossRegionBlock(data.cross_region));
+    output.appendChild(buildCrossRegionBlock(data.cross_region, profile.regions));
   }
   renderHistoryGrounding([data.__grounding]);
   HistoryLensKeyEvents.renderControls([year], formatYear);
@@ -697,12 +715,18 @@ function renderCompare(year1, data1, year2, data2) {
   document.getElementById('globalContext').classList.remove('visible');
   document.getElementById('hookMoment').classList.remove('visible');
   renderHistoryGrounding([data1.__grounding, data2.__grounding]);
+  renderRegionProfileNote(null);
 
   const output = document.getElementById('regionsOutput');
   output.innerHTML = '';
 
   const wrapper = document.createElement('div');
   for (const { year, data } of [{ year: year1, data: data1 }, { year: year2, data: data2 }]) {
+    const profile = data.__regionProfile || {
+      id: 'modern',
+      label: 'Modern continental regions',
+      regions: DEFAULT_REGIONS,
+    };
     const block = document.createElement('div');
     block.className = 'compare-block';
 
@@ -711,9 +735,14 @@ function renderCompare(year1, data1, year2, data2) {
     label.textContent = formatYear(year);
     block.appendChild(label);
 
+    const profileLabel = document.createElement('div');
+    profileLabel.className = 'compare-region-profile';
+    profileLabel.textContent = profile.label;
+    block.appendChild(profileLabel);
+
     const grid = document.createElement('div');
     grid.className = 'regions-grid compare-regions-grid';
-    for (const region of REGIONS) {
+    for (const region of profile.regions) {
       const regionData = data.regions?.[region.id];
       if (regionData) grid.appendChild(buildCard(region, regionData));
     }
@@ -766,6 +795,17 @@ function renderHistoryGrounding(items) {
   });
 }
 
+function renderRegionProfileNote(profile) {
+  const note = document.getElementById('regionProfileNote');
+  if (!profile || profile.id === 'modern') {
+    note.textContent = '';
+    note.classList.remove('visible');
+    return;
+  }
+  note.textContent = `${profile.label}: regions reflect the political and cultural worlds of this period.`;
+  note.classList.add('visible');
+}
+
 /* ── CARD BUILDER ────────────────────────────────────────────────────────── */
 /**
  * Builds a region card entirely with DOM methods.
@@ -775,12 +815,14 @@ function buildCard(region, rd) {
   const card = document.createElement('article');
   card.className = 'region-card';
   card.dataset.region = region.id;
+  card.style.setProperty('--region-color', region.color || '#c9a84c');
+  card.style.setProperty('--region-dim', colorWithAlpha(region.color || '#c9a84c', 0.15));
 
   // Header
   const header = document.createElement('div');
   header.className = 'card-header';
   header.innerHTML = `
-    <div class="region-icon-wrap" aria-hidden="true">${region.icon}</div>
+    <div class="region-icon-wrap${region.icon.length <= 2 ? ' is-monogram' : ''}" aria-hidden="true">${esc(region.icon)}</div>
     <div>
       <div class="region-name">${esc(region.label)}</div>
       <div class="region-sub">${esc(region.sub)}</div>
@@ -920,9 +962,8 @@ function buildCard(region, rd) {
 }
 
 /* ── CROSS-REGION BLOCK ──────────────────────────────────────────────────── */
-function buildCrossRegionBlock(crossData) {
-  const REGION_CLASS = { europe: 'europe', asia: 'asia', namerica: 'namerica', africa: 'africa' };
-
+function buildCrossRegionBlock(crossData, regions = DEFAULT_REGIONS) {
+  const regionMap = new Map(regions.map(region => [region.id, region]));
   const block = document.createElement('div');
   block.className = 'cross-region-block';
 
@@ -949,8 +990,10 @@ function buildCrossRegionBlock(crossData) {
       dots.className = 'tension-regions';
       for (const regionId of (t.regions || [])) {
         const dot = document.createElement('span');
-        dot.className = `tension-dot ${REGION_CLASS[regionId] || ''}`;
-        dot.title = regionId;
+        const region = regionMap.get(regionId);
+        dot.className = 'tension-dot';
+        dot.style.background = region?.color || '#c9a84c';
+        dot.title = region?.label || regionId;
         dots.appendChild(dot);
       }
       item.appendChild(dots);
@@ -1327,9 +1370,17 @@ function hideResults() {
   document.getElementById('signalsBar').classList.remove('visible');
   document.getElementById('hookMoment').classList.remove('visible');
   renderHistoryGrounding([]);
+  renderRegionProfileNote(null);
   document.getElementById('feedbackBar').style.display = 'none';
   document.getElementById('keyEventsOutput').innerHTML = '';
   document.getElementById('eventCheckOutput').innerHTML = '';
+}
+
+function colorWithAlpha(hex, alpha) {
+  const value = String(hex).replace('#', '');
+  if (!/^[0-9a-f]{6}$/i.test(value)) return `rgba(201,168,76,${alpha})`;
+  const number = Number.parseInt(value, 16);
+  return `rgba(${number >> 16},${(number >> 8) & 255},${number & 255},${alpha})`;
 }
 
 /* ── TOAST ───────────────────────────────────────────────────────────────── */

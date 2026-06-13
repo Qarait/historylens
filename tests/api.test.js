@@ -8,6 +8,7 @@ const { default: historyHandler } = await import('../api/history.js');
 const { default: eventsHandler } = await import('../api/events.js');
 const { default: checkEventHandler } = await import('../api/check-event.js');
 const { enforceRateLimit } = await import('../api/_lib/request.js');
+const { getRegionProfile } = await import('../api/_lib/region-profiles.js');
 const originalFetch = globalThis.fetch;
 
 function makeMocks(body, method = 'POST') {
@@ -110,6 +111,38 @@ test('history endpoint owns prompt and model settings', async () => {
 
   assert.equal(res._status, 200);
   assert.equal(res._headers['X-HistoryLens-Grounding'], 'wikipedia');
+});
+
+test('region profiles change at historical era boundaries', () => {
+  assert.equal(getRegionProfile(500).id, 'ancient');
+  assert.equal(getRegionProfile(501).id, 'medieval');
+  assert.equal(getRegionProfile(1499).id, 'medieval');
+  assert.equal(getRegionProfile(1500).id, 'early-modern');
+  assert.equal(getRegionProfile(1800).id, 'early-modern');
+  assert.equal(getRegionProfile(1801).id, 'modern');
+});
+
+test('ancient prompt uses era-adjusted global regions and a smaller event budget', async () => {
+  const responses = groundingResponses(-44);
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes('wikipedia.org')) return responses.shift();
+    const forwarded = JSON.parse(options.body);
+    const prompt = forwarded.messages[0].content;
+    assert.match(prompt, /Ancient world regions/);
+    assert.match(prompt, /"mediterranean"/);
+    assert.match(prompt, /"americas_pacific"/);
+    assert.match(prompt, /Exactly 1 primary \+ 1 secondary event per region/);
+    assert.match(prompt, /Analyze the whole world rather than fixating/);
+    return jsonResponse({ content: [{ text: '{}' }] });
+  };
+
+  const { req, res } = makeMocks({ year: -44, stream: false });
+  await historyHandler(req, res);
+
+  const profile = JSON.parse(decodeURIComponent(res._headers['X-HistoryLens-Region-Profile']));
+  assert.equal(profile.id, 'ancient');
+  assert.equal(profile.regions.length, 5);
+  assert.equal(res._status, 200);
 });
 
 test('curated 2020 returns without Anthropic or Wikipedia access', async () => {

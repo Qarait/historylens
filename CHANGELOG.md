@@ -6,6 +6,19 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.0] — 2026-06-13
+
+### Added
+- Era-aware region profiles for ancient, medieval, early-modern, and modern history.
+- Historical region metadata shared through the existing API response headers.
+- Compact context labels for adaptive single-year and mixed-era comparison results.
+
+### Changed
+- Pre-1801 results use five historically meaningful regions with two events each, reducing the total event budget from 12 to 10.
+- Prompts now require global coverage and explicitly reject fixation on one conflict, country, or civilization.
+
+---
+
 ## [1.4.0] — 2026-06-13
 
 ### Added

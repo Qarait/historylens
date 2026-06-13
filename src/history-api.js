@@ -2,10 +2,17 @@
   'use strict';
 
   const HISTORY_ENDPOINT = '/api/history';
-  const REGION_IDS = ['europe', 'asia', 'namerica', 'africa', 'oceania'];
+  const DEFAULT_REGIONS = [
+    { id: 'europe', label: 'Europe', sub: 'Western & Eastern Europe', icon: '🏰', color: '#c0392b' },
+    { id: 'asia', label: 'Asia', sub: 'East, South, Central Asia & Middle East', icon: '🏯', color: '#16a085' },
+    { id: 'namerica', label: 'The Americas', sub: 'North, Central & South America', icon: '🌎', color: '#2980b9' },
+    { id: 'africa', label: 'Africa', sub: 'Sub-Saharan & North Africa', icon: '🌍', color: '#d4ac0d' },
+  ];
 
   async function fetchHistoryStream(year, callbacks) {
     const response = await requestHistory(year, true, 60000);
+    const regionProfile = readRegionProfile(response);
+    callbacks.onRegionProfile?.(regionProfile);
     callbacks.onGrounding?.(readGrounding(response));
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -27,7 +34,13 @@
           const event = JSON.parse(line.substring(6));
           if (event.type === 'content_block_delta' && event.delta?.text) {
             fullText += event.delta.text;
-            processIncrementalText(fullText, renderedKeys, renderedRegions, callbacks);
+            processIncrementalText(
+              fullText,
+              renderedKeys,
+              renderedRegions,
+              callbacks,
+              regionProfile.regions.map(region => region.id)
+            );
           }
         } catch {
           // Ignore incomplete SSE lines and continue reading.
@@ -36,7 +49,8 @@
     }
 
     const finalData = finalizeParsing(fullText);
-    validateSchema(finalData);
+    validateSchema(finalData, regionProfile.regions.map(region => region.id));
+    finalData.__regionProfile = regionProfile;
     callbacks.onComplete(finalData);
   }
 
@@ -47,8 +61,10 @@
     if (!rawContent) throw new Error('parse: Unrecognized response format');
 
     const parsed = finalizeParsing(rawContent);
-    validateSchema(parsed);
+    const regionProfile = readRegionProfile(response);
+    validateSchema(parsed, regionProfile.regions.map(region => region.id));
     parsed.__grounding = readGrounding(response);
+    parsed.__regionProfile = regionProfile;
     return parsed;
   }
 
@@ -75,7 +91,7 @@
     }
   }
 
-  function processIncrementalText(text, renderedKeys, renderedRegions, callbacks) {
+  function processIncrementalText(text, renderedKeys, renderedRegions, callbacks, regionIds) {
     if (!renderedKeys.has('era_description')) {
       const match = text.match(/"era_description":\s*"([^"]+)"/);
       if (match) {
@@ -96,7 +112,7 @@
     renderCompletedObject(text, 'global_signals', renderedKeys, callbacks.onSignals);
     renderCompletedObject(text, 'cross_region', renderedKeys, callbacks.onCrossRegion);
 
-    for (const regionId of REGION_IDS) {
+    for (const regionId of regionIds) {
       if (renderedRegions.has(regionId)) continue;
       const startIndex = text.indexOf(`"${regionId}":`);
       if (startIndex === -1) continue;
@@ -167,11 +183,11 @@
     }
   }
 
-  function validateSchema(data) {
+  function validateSchema(data, regionIds = DEFAULT_REGIONS.map(region => region.id)) {
     if (!data || typeof data !== 'object' || typeof data.era_description !== 'string') {
       throw new Error('schema');
     }
-    for (const regionId of ['europe', 'asia', 'namerica', 'africa']) {
+    for (const regionId of regionIds) {
       const region = data.regions?.[regionId];
       if (!region || !Array.isArray(region.events) || region.events.length === 0) {
         throw new Error('schema');
@@ -189,6 +205,22 @@
       curated: response.headers.get('X-HistoryLens-Curated') === 'true',
       reviewedAt: response.headers.get('X-HistoryLens-Reviewed-At') || '',
     };
+  }
+
+  function readRegionProfile(response) {
+    const encoded = response.headers.get('X-HistoryLens-Region-Profile');
+    if (!encoded) {
+      return { id: 'modern', label: 'Modern continental regions', regions: DEFAULT_REGIONS };
+    }
+    try {
+      const parsed = JSON.parse(decodeURIComponent(encoded));
+      if (!Array.isArray(parsed.regions) || parsed.regions.length < 4) {
+        throw new Error('Invalid profile');
+      }
+      return parsed;
+    } catch {
+      return { id: 'modern', label: 'Modern continental regions', regions: DEFAULT_REGIONS };
+    }
   }
 
   global.HistoryLensApi = { fetchHistory, fetchHistoryStream };

@@ -13,6 +13,10 @@ import { buildHistoryPrompt } from './_lib/prompts.js';
 import { enforceOrigin, enforceRateLimit } from './_lib/request.js';
 import { getYearGrounding } from './_lib/wikipedia.js';
 import { getCuratedYear } from './_data/curated-years.js';
+import {
+  getRegionProfile,
+  setRegionProfileHeader,
+} from './_lib/region-profiles.js';
 
 export default async function handler(req, res) {
   if (!enforceOrigin(req, res)) return;
@@ -26,6 +30,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid historical year.' });
   }
   const stream = req.body?.stream === true;
+  const regionProfile = getRegionProfile(year);
+  setRegionProfileHeader(res, regionProfile);
   const curated = getCuratedYear(year);
   if (curated) return sendCuratedResponse(res, curated, stream);
 
@@ -56,7 +62,10 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        messages: [{ role: 'user', content: buildHistoryPrompt(year, groundingContext) }],
+        messages: [{
+          role: 'user',
+          content: buildHistoryPrompt(year, groundingContext, regionProfile),
+        }],
         max_tokens: HISTORY_MAX_TOKENS,
         temperature: 0,
         stream,

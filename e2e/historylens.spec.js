@@ -53,20 +53,66 @@ const eventsData = {
   })),
 };
 
+const modernProfile = {
+  id: 'modern',
+  label: 'Modern continental regions',
+  regions: [
+    { id: 'europe', label: 'Europe', sub: 'Western & Eastern Europe', icon: 'E', color: '#c0392b' },
+    { id: 'asia', label: 'Asia', sub: 'East, South, Central Asia & Middle East', icon: 'A', color: '#16a085' },
+    { id: 'namerica', label: 'The Americas', sub: 'North, Central & South America', icon: 'W', color: '#2980b9' },
+    { id: 'africa', label: 'Africa', sub: 'Sub-Saharan & North Africa', icon: 'A', color: '#d4ac0d' },
+  ],
+};
+
+const ancientProfile = {
+  id: 'ancient',
+  label: 'Ancient world regions',
+  regions: [
+    { id: 'mediterranean', label: 'Mediterranean & Europe', sub: 'Rome, Greece, and neighboring societies', icon: 'M', color: '#c0392b' },
+    { id: 'west_south_asia', label: 'West, Central & South Asia', sub: 'Persia, the steppe, and India', icon: 'W', color: '#16a085' },
+    { id: 'east_asia', label: 'East Asia', sub: 'China, Korea, and Japan', icon: 'E', color: '#2980b9' },
+    { id: 'africa', label: 'Africa', sub: 'African societies', icon: 'A', color: '#d4ac0d' },
+    { id: 'americas_pacific', label: 'Americas & Pacific', sub: 'American and Pacific societies', icon: 'P', color: '#8e6bbd' },
+  ],
+};
+
+function historyFor(year, profile) {
+  const eventsPerRegion = profile.id === 'modern' ? 3 : 2;
+  return {
+    ...historyData,
+    year_label: year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`,
+    regions: Object.fromEntries(profile.regions.map(region => [
+      region.id,
+      {
+        state: 'Historically active',
+        thesis_headline: 'Power Shifted Across Networks',
+        thesis_argument: 'Political and economic systems changed across this historical zone.',
+        events: Array.from({ length: eventsPerRegion }, (_, index) => ({
+          year: String(Math.abs(year)),
+          title: `${region.label} event ${index + 1}`,
+          description: 'A grounded development altered regional power and exchange.',
+          rank: index === 0 ? 'primary' : 'secondary',
+        })),
+        key_figures: ['Figure One', 'Figure Two'],
+        significance: 'The effects reshaped the wider historical system.',
+      },
+    ])),
+  };
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/history', async route => {
     const requestBody = route.request().postDataJSON();
     expect(Object.keys(requestBody).sort()).toEqual(['stream', 'year']);
 
-    const responseData = {
-      ...historyData,
-      year_label: `${requestBody.year} CE`,
-    };
+    const profile = requestBody.year <= 500 ? ancientProfile : modernProfile;
+    const responseData = historyFor(requestBody.year, profile);
     const text = JSON.stringify(responseData);
     const historyHeaders = {
       'X-HistoryLens-Grounding': 'wikipedia',
       'X-HistoryLens-Source-Name': 'Wikipedia contributors',
       'X-HistoryLens-Source-Url': `https://en.wikipedia.org/wiki/${requestBody.year}`,
+      'X-HistoryLens-Region-Profile': encodeURIComponent(JSON.stringify(profile)),
       ...(requestBody.year === 2020 ? {
         'X-HistoryLens-Curated': 'true',
         'X-HistoryLens-Reviewed-At': '2026-06-13',
@@ -172,4 +218,40 @@ test('compares a curated year with a generated year', async ({ page }) => {
   await expect(page.locator('.region-card')).toHaveCount(8);
   await expect(page.locator('.curated-badge')).toHaveCount(1);
   await expect(page.locator('#historyGrounding a')).toHaveCount(2);
+});
+
+test('uses era-adjusted regions for an ancient year', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#yearInput').fill('-44');
+  await page.locator('#searchBtn').click();
+
+  await expect(page.locator('.region-card')).toHaveCount(5);
+  await expect(page.locator('.region-name')).toHaveText([
+    'Mediterranean & Europe',
+    'West, Central & South Asia',
+    'East Asia',
+    'Africa',
+    'Americas & Pacific',
+  ]);
+  await expect(page.locator('#regionProfileNote')).toContainText('Ancient world regions');
+  await expect(page.locator('.event-item')).toHaveCount(10);
+});
+
+test('compares ancient and modern region systems without overflow', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#compareTrack').click();
+  await page.locator('#yearInput').fill('-44');
+  await page.locator('#yearInput2').fill('2020');
+  await page.locator('#searchBtn').click();
+
+  await expect(page.locator('.compare-block')).toHaveCount(2);
+  await expect(page.locator('.region-card')).toHaveCount(9);
+  await expect(page.locator('.compare-region-profile')).toHaveText([
+    'Ancient world regions',
+    'Modern continental regions',
+  ]);
+  const hasOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+  );
+  expect(hasOverflow).toBe(false);
 });

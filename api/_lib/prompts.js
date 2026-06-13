@@ -1,7 +1,18 @@
 import { formatHistoricalYear } from './config.js';
 
-export function buildHistoryPrompt(year, groundingContext = '') {
+export function buildHistoryPrompt(year, groundingContext = '', regionProfile) {
   const yearLabel = formatHistoricalYear(year);
+  const profile = regionProfile;
+  const regionIds = profile.regions.map(region => region.id);
+  const regionSchema = profile.regions
+    .map(region => `    "${region.id}": { "state":"2-3 words","thesis_headline":"4-6 word verdict","thesis_argument":"1 analytical sentence","events":[${eventSchema(profile.eventsPerRegion)}],"key_figures":["...","...","..."],"significance":"1 sentence" }`)
+    .join(',\n');
+  const tensionSchema = [
+    [regionIds[0], regionIds[1]],
+    [regionIds[2], regionIds[3]],
+    [regionIds[0], regionIds[4] || regionIds[3]],
+  ].map(pair => `      { "regions": ${JSON.stringify(pair)}, "note": "1 crisp sentence." }`)
+    .join(',\n');
   const groundingBlock = groundingContext
     ? `\nGROUNDING CHRONOLOGY:\nUse the following Wikipedia year-page excerpts as factual anchors. Do not copy their prose. Do not introduce a named event that conflicts with this chronology.\n${groundingContext}\n`
     : '';
@@ -20,6 +31,9 @@ ACCURACY RULES:
 - Do not import events from an adjacent year merely because their causes or consequences touched ${yearLabel}.
 - For ancient years, acknowledge uncertainty and sparse records rather than inventing precision.
 - Use civilisations and political entities active at the time.
+- Analyze the whole world rather than fixating on one conflict, country, or civilization.
+- Use this era-adjusted regional frame: ${profile.label}.
+- Treat each region according to its historical societies and connections in ${yearLabel}, not modern borders.
 ${groundingBlock}
 SCHEMA:
 {
@@ -37,23 +51,25 @@ SCHEMA:
   "cross_region": {
     "contrast": "1-2 opinionated sentences contrasting regions.",
     "tensions": [
-      { "regions": ["europe","asia"], "note": "1 crisp sentence." },
-      { "regions": ["namerica","africa"], "note": "1 crisp sentence." },
-      { "regions": ["europe","africa"], "note": "1 crisp sentence." }
+${tensionSchema}
     ]
   },
   "regions": {
-    "europe": { "state":"2-3 words","thesis_headline":"4-6 word verdict","thesis_argument":"1 analytical sentence","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"1 sentence" },
-    "asia": { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." },
-    "namerica": { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." },
-    "africa": { "state":"...","thesis_headline":"...","thesis_argument":"...","events":[{"year":"...","title":"...","description":"...","rank":"primary"},{"year":"...","title":"...","description":"...","rank":"secondary"},{"year":"...","title":"...","description":"...","rank":"secondary"}],"key_figures":["...","...","..."],"significance":"..." }
+${regionSchema}
   }
 }
 
 HARD CONSTRAINTS:
-- Exactly 1 primary + 2 secondary events per region.
+- Return exactly these region IDs in this order: ${regionIds.join(', ')}.
+- Exactly 1 primary + ${profile.eventsPerRegion - 1} secondary event${profile.eventsPerRegion - 1 === 1 ? '' : 's'} per region.
 - global_signals values must be one of Low, Moderate, High, Critical, Rising, Declining, Stable, Collapsing.
 - Return JSON only.`;
+}
+
+function eventSchema(count) {
+  return Array.from({ length: count }, (_, index) =>
+    `{"year":"...","title":"...","description":"...","rank":"${index === 0 ? 'primary' : 'secondary'}"}`
+  ).join(',');
 }
 
 export function buildKeyEventsPrompt(year, grounding) {

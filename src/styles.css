@@ -349,6 +349,8 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; padding: 0.1
 .divider { display: flex; align-items: center; gap: 1rem; max-width: 1300px; margin: 0 auto 1.2rem; }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .divider-text { font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+.region-profile-note { display: none; max-width: 1300px; margin: -0.65rem auto 1.1rem; text-align: center; color: var(--text-3); font-size: 0.68rem; font-style: italic; }
+.region-profile-note.visible { display: block; }
 
 /* ── REGION CARDS ── */
 .regions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1.1rem; max-width: 1300px; margin: 0 auto; }
@@ -361,25 +363,16 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; padding: 0.1
   animation: cardIn 0.45s cubic-bezier(0.16,1,0.3,1) both;
 }
 .region-card:hover { transform: translateY(-3px); }
-.region-card[data-region="europe"]   { border-top: 2px solid var(--europe);   }
-.region-card[data-region="asia"]     { border-top: 2px solid var(--asia);     }
-.region-card[data-region="namerica"] { border-top: 2px solid var(--namerica); }
-.region-card[data-region="africa"]   { border-top: 2px solid var(--africa);   }
-
-.region-card:hover[data-region="europe"]   { box-shadow: 0 12px 40px rgba(192,57,43,0.15); }
-.region-card:hover[data-region="asia"]     { box-shadow: 0 12px 40px rgba(22,160,133,0.15); }
-.region-card:hover[data-region="namerica"] { box-shadow: 0 12px 40px rgba(41,128,185,0.15); }
-.region-card:hover[data-region="africa"]   { box-shadow: 0 12px 40px rgba(212,172,13,0.15); }
+.region-card { border-top: 2px solid var(--region-color, var(--gold)); }
+.region-card:hover { box-shadow: 0 12px 40px var(--region-dim, var(--gold-dim)); }
 
 .region-card:nth-child(1){animation-delay:.04s;} .region-card:nth-child(2){animation-delay:.09s;} .region-card:nth-child(3){animation-delay:.14s;} .region-card:nth-child(4){animation-delay:.19s;} .region-card:nth-child(5){animation-delay:.24s;}
 @keyframes cardIn { from{opacity:0;transform:translateY(22px) scale(0.98);} to{opacity:1;transform:translateY(0) scale(1);} }
 
 .card-header { padding: 1rem 1.2rem 0.9rem; display: flex; align-items: center; gap: 0.7rem; background: var(--bg-3); border-bottom: 1px solid var(--border); }
 .region-icon-wrap { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
-[data-region="europe"]   .region-icon-wrap { background: var(--europe-dim);   }
-[data-region="asia"]     .region-icon-wrap { background: var(--asia-dim);     }
-[data-region="namerica"] .region-icon-wrap { background: var(--namerica-dim); }
-[data-region="africa"]   .region-icon-wrap { background: var(--africa-dim);   }
+.region-card .region-icon-wrap { background: var(--region-dim, var(--gold-dim)); color: var(--region-color, var(--gold)); }
+.region-icon-wrap.is-monogram { font: 700 0.78rem 'JetBrains Mono', monospace; }
 
 .region-name { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 700; color: var(--text); }
 .region-sub  { font-size: 0.7rem; color: var(--text-3); margin-top: 0.1rem; }
@@ -387,10 +380,7 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; padding: 0.1
 
 .state-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 20px; }
 .state-label::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-[data-region="europe"]   .state-label { background: var(--europe-dim);   color: #e57070; }
-[data-region="asia"]     .state-label { background: var(--asia-dim);     color: #50d0b0; }
-[data-region="namerica"] .state-label { background: var(--namerica-dim); color: #70b0e0; }
-[data-region="africa"]   .state-label { background: var(--africa-dim);   color: #e0c840; }
+.region-card .state-label { background: var(--region-dim, var(--gold-dim)); color: var(--region-color, var(--gold)); }
 
 
 .thesis-block    { padding: 0.8rem 0.9rem; background: var(--bg); border-radius: 6px; border: 1px solid var(--border-2); }
@@ -424,10 +414,7 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; padding: 0.1
 .event-item.is-secondary .event-desc  { font-size: 0.72rem; color: var(--text-3); margin-top: 0.1rem; }
 
 .event-year { font-family: 'JetBrains Mono', monospace; padding: 0.18rem 0.42rem; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top: 0.15rem; font-weight: 500; }
-[data-region="europe"]   .event-year { background: var(--europe-dim);   color: #e57070; }
-[data-region="asia"]     .event-year { background: var(--asia-dim);     color: #50d0b0; }
-[data-region="namerica"] .event-year { background: var(--namerica-dim); color: #70b0e0; }
-[data-region="africa"]   .event-year { background: var(--africa-dim);   color: #e0c840; }
+.region-card .event-year { background: var(--region-dim, var(--gold-dim)); color: var(--region-color, var(--gold)); }
 
 
 .figures-row  { display: flex; flex-wrap: wrap; gap: 0.3rem; }
@@ -751,6 +738,7 @@ footer { background: var(--bg-2); border-top: 1px solid var(--border); padding: 
   border-left: 3px solid var(--gold);
   padding-left: 0.8rem;
 }
+.compare-region-profile { max-width: 1300px; margin: -0.7rem auto 0.8rem; padding-left: 1rem; color: var(--text-3); font-size: 0.68rem; font-style: italic; }
 
 .compare-regions-grid {
   max-width: 1300px;
