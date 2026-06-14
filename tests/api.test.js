@@ -50,6 +50,14 @@ function jsonResponse(data, status = 200) {
   };
 }
 
+function hasHostname(value, hostname) {
+  try {
+    return new URL(String(value)).hostname === hostname;
+  } catch {
+    return false;
+  }
+}
+
 function groundingResponses(year = 2020) {
   const lines = Array.from({ length: 7 }, (_, index) =>
     `*[[January ${index + 1}]] - [[Source Event ${index + 1}]] changes the political landscape in region ${index + 1}.`
@@ -136,7 +144,7 @@ afterEach(() => {
 test('history endpoint owns prompt and model settings', async () => {
   const responses = groundingResponses(2021);
   globalThis.fetch = async (url, options = {}) => {
-    if (String(url).includes('wikipedia.org')) return responses.shift();
+    if (hasHostname(url, 'en.wikipedia.org')) return responses.shift();
 
     const forwarded = JSON.parse(options.body);
     assert.equal(forwarded.model, 'claude-haiku-4-5-20251001');
@@ -170,7 +178,7 @@ test('region profiles change at historical era boundaries', () => {
 test('ancient prompt uses era-adjusted global regions and a smaller event budget', async () => {
   const responses = groundingResponses(-44);
   globalThis.fetch = async (url, options = {}) => {
-    if (String(url).includes('wikipedia.org')) return responses.shift();
+    if (hasHostname(url, 'en.wikipedia.org')) return responses.shift();
     const forwarded = JSON.parse(options.body);
     const prompt = forwarded.messages[0].content;
     assert.match(prompt, /Ancient world regions/);
@@ -194,7 +202,7 @@ test('period endpoint samples chronologies and owns the change-over-time prompt'
   const payload = validPeriodPayload();
   globalThis.fetch = async (url, options = {}) => {
     const value = String(url);
-    if (value.includes('wikipedia.org')) {
+    if (hasHostname(value, 'en.wikipedia.org')) {
       if (value.includes('prop=sections')) {
         return jsonResponse({
           parse: { title: 'sample', sections: [{ index: '2', line: 'Events' }] },
@@ -301,8 +309,8 @@ test('events endpoint returns seven verified citations', async () => {
         parse: { externallinks: ['https://www.archives.gov/research/sample'] },
       });
     }
-    if (value.includes('wikipedia.org')) return responses.shift();
-    if (value.includes('api.crossref.org')) {
+    if (hasHostname(value, 'en.wikipedia.org')) return responses.shift();
+    if (hasHostname(value, 'api.crossref.org')) {
       const query = new URL(value).searchParams.get('query.bibliographic');
       const title = query.replace(/\s+2021$/, '');
       return jsonResponse({
@@ -373,7 +381,7 @@ test('events endpoint rejects a source not present in chronology', async () => {
   payload.events[0].source_title = 'Invented Source';
 
   globalThis.fetch = async url => {
-    if (String(url).includes('wikipedia.org')) return responses.shift();
+    if (hasHostname(url, 'en.wikipedia.org')) return responses.shift();
     return jsonResponse({ content: [{ text: JSON.stringify(payload) }] });
   };
 
