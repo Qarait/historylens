@@ -501,8 +501,7 @@
       .replace('West, Central & South Asia', 'West & South Asia')
       .replace('Middle East & South Asia', 'Middle & South Asia')
       .replace('Europe & Mediterranean', 'Europe & Med.')
-      .replace('Mediterranean & Europe', 'Mediterranean')
-      .replace('Americas & Pacific', 'Americas & Pacific');
+      .replace('Mediterranean & Europe', 'Mediterranean');
   }
 
   function curvedPath(from, to) {
