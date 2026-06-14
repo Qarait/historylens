@@ -225,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnCopy')         .addEventListener('click',  doCopy);
   document.getElementById('btnHistory')      .addEventListener('click',  toggleHistory);
   document.getElementById('btnShare')        .addEventListener('click',  shareUrl);
+  document.getElementById('btnTeacher')      .addEventListener('click',  () => HistoryLensTeacherMode.toggle());
   document.getElementById('fbPos')           .addEventListener('click',  () => submitFeedback('positive'));
   document.getElementById('fbNeg')           .addEventListener('click',  () => submitFeedback('negative'));
   document.getElementById('btnReport')       .addEventListener('click',  reportIssue);
@@ -606,6 +607,11 @@ async function exploreSingle(year) {
       onComplete: (fullData) => {
         fullData.__grounding = accumulatedData.__grounding || null;
         fullData.__regionProfile = accumulatedData.__regionProfile || activeRegionProfile;
+        renderTeacherMode('year', [{
+          label: formatYear(year),
+          profile: fullData.__regionProfile,
+          data: fullData,
+        }]);
         if (CONFIG.cacheEnabled) cache.set(year, fullData);
         addToSearchHistory(year, fullData.era_description || '');
         addToTimeline(year, fullData.era_description || '');
@@ -642,6 +648,7 @@ function initResultsContainer(year) {
   document.getElementById('results').classList.add('active');
   document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
   document.getElementById('historicalMapOutput').innerHTML = '';
+  HistoryLensTeacherMode.reset(document.getElementById('teacherModeOutput'));
   HistoryLensKeyEvents.renderControls([year], formatYear);
   HistoryLensEventChecker.renderControls([year], formatYear);
   
@@ -850,6 +857,11 @@ function renderSingle(year, data) {
     profile,
     data,
   }]);
+  renderTeacherMode('year', [{
+    label: formatYear(year),
+    profile,
+    data,
+  }]);
   HistoryLensKeyEvents.renderControls([year], formatYear);
   HistoryLensEventChecker.renderControls([year], formatYear);
 
@@ -915,6 +927,11 @@ function renderPeriod(startYear, endYear, data) {
     data,
     period: true,
   }]);
+  renderTeacherMode('period', [{
+    label: formatPeriod(startYear, endYear),
+    profile,
+    data,
+  }]);
   document.getElementById('keyEventsOutput').innerHTML = '';
   document.getElementById('eventCheckOutput').innerHTML = '';
   document.getElementById('feedbackBar').style.display = 'flex';
@@ -975,6 +992,7 @@ function renderCompare(year1, data1, year2, data2) {
 
   const wrapper = document.createElement('div');
   const mapViews = [];
+  const teacherViews = [];
   for (const { year, data } of [{ year: year1, data: data1 }, { year: year2, data: data2 }]) {
     const profile = data.__regionProfile || {
       id: 'modern',
@@ -1010,9 +1028,15 @@ function renderCompare(year1, data1, year2, data2) {
       compare: true,
       cardSelector: `.compare-block[data-map-label="${year}"]`,
     });
+    teacherViews.push({
+      label: formatYear(year),
+      profile,
+      data,
+    });
   }
   output.appendChild(wrapper);
   renderHistoricalMaps(mapViews);
+  renderTeacherMode('compare', teacherViews);
   HistoryLensKeyEvents.renderControls([year1, year2], formatYear);
   HistoryLensEventChecker.renderControls([year1, year2], formatYear);
 
@@ -1068,6 +1092,13 @@ function renderHistoryGrounding(items) {
 function renderHistoricalMaps(views) {
   const container = document.getElementById('historicalMapOutput');
   HistoryLensHistoricalMap.render(container, views);
+}
+
+function renderTeacherMode(mode, views) {
+  HistoryLensTeacherMode.configure(
+    document.getElementById('teacherModeOutput'),
+    { mode, views }
+  );
 }
 
 function renderRegionProfileNote(profile) {
@@ -1654,6 +1685,7 @@ function hideResults() {
   document.getElementById('hookMoment').classList.remove('visible');
   document.getElementById('periodArc').classList.remove('visible');
   document.getElementById('historicalMapOutput').innerHTML = '';
+  HistoryLensTeacherMode.reset(document.getElementById('teacherModeOutput'));
   renderHistoryGrounding([]);
   renderRegionProfileNote(null);
   document.getElementById('feedbackBar').style.display = 'none';

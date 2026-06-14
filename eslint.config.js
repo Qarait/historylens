@@ -27,6 +27,7 @@ export default [
         HistoryLensApi: 'readonly',
         HistoryLensPeriodApi: 'readonly',
         HistoryLensHistoricalMap: 'readonly',
+        HistoryLensTeacherMode: 'readonly',
         HistoryLensKeyEvents: 'readonly',
         HistoryLensEventChecker: 'readonly',
       },

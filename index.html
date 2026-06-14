@@ -273,8 +273,18 @@
           </svg>
           <span>Share</span>
         </button>
+        <button type="button" class="tool-btn teacher-tool-btn" id="btnTeacher" aria-label="Open Teacher Mode" aria-pressed="false" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 4h18v13H3z"/>
+            <path d="M8 21h8M12 17v4M7 9h4M7 12h7"/>
+          </svg>
+          <span>Teacher Mode</span>
+        </button>
       </div>
     </div>
+
+    <!-- Classroom-ready activities derived from the current result -->
+    <div id="teacherModeOutput"></div>
 
     <!-- Change-over-time arc for period views -->
     <div class="period-arc" id="periodArc"></div>
@@ -550,7 +560,7 @@
   <div class="footer-bottom">
     <div class="footer-meta">
       <span>© 2026 HistoryLens</span>
-      <span class="footer-version">v1.9.0</span>
+      <span class="footer-version">v1.10.0</span>
       <span>MIT License</span>
       <a href="mailto:hello@historylens.app">hello@historylens.app</a>
     </div>
@@ -564,6 +574,7 @@
 <script src="src/history-api.js"></script>
 <script src="src/period-api.js"></script>
 <script src="src/historical-map.js"></script>
+<script src="src/teacher-mode.js"></script>
 <script src="src/key-events.js"></script>
 <script src="src/event-checker.js"></script>
 <script src="src/app.js"></script>

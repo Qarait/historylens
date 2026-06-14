@@ -6,6 +6,21 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.10.0] - 2026-06-14
+
+### Added
+- Teacher Mode for completed year, period, and comparison results.
+- Adjustable middle-school, high-school, and advanced learning objectives.
+- Structured 20-, 45-, and 60-minute lesson sequences.
+- Evidence-based discussion prompts, vocabulary, answer-reveal quick checks, and essential questions.
+- Classroom-kit copy and dedicated teacher-only print output.
+
+### Performance
+- Classroom materials are generated locally from existing grounded results with no additional API request, dependency, or model cost.
+- Teacher Mode remains disabled until streamed regional analysis is complete.
+
+---
+
 ## [1.9.0] - 2026-06-14
 
 ### Changed

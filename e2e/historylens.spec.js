@@ -293,6 +293,36 @@ test('keeps the key events panel usable on a narrow viewport', async ({ page }) 
   expect(hasOverflow).toBe(false);
 });
 
+test('builds an adaptive classroom kit without another API request', async ({ page }) => {
+  let historyRequests = 0;
+  page.on('request', request => {
+    if (new URL(request.url()).pathname === '/api/history') historyRequests++;
+  });
+  await page.goto('/');
+  await page.locator('#yearInput').fill('2020');
+  await page.locator('#searchBtn').click();
+
+  await expect(page.locator('#btnTeacher')).toBeEnabled();
+  await page.locator('#btnTeacher').click();
+  await expect(page.locator('.teacher-mode-panel')).toBeVisible();
+  await expect(page.locator('.teacher-mode-title')).toHaveText('2020 CE Classroom Kit');
+  await expect(page.locator('.teacher-mode-overview-card')).toHaveCount(3);
+  await expect(page.locator('.teacher-mode-sequence li')).toHaveCount(5);
+  await expect(page.locator('.teacher-mode-prompts li')).toHaveCount(4);
+  await expect(page.locator('.teacher-mode-vocabulary dt')).toHaveCount(6);
+  await expect(page.locator('.teacher-mode-quick-check details')).toHaveCount(4);
+
+  await page.locator('#teacherGradeBand').selectOption('middle');
+  await expect(page.locator('.teacher-mode-overview-card').first()).toContainText(
+    'Students will identify major developments'
+  );
+  await page.locator('#teacherLessonLength').selectOption('20');
+  await expect(page.locator('.teacher-mode-sequence li')).toHaveCount(3);
+  await page.locator('.teacher-mode-quick-check details').first().click();
+  await expect(page.locator('.teacher-mode-quick-check details').first()).toContainText('Europe');
+  expect(historyRequests).toBe(1);
+});
+
 test('compares a curated year with a generated year', async ({ page }) => {
   await page.goto('/');
   await page.locator('#compareTrack').click();
@@ -306,6 +336,11 @@ test('compares a curated year with a generated year', async ({ page }) => {
   await expect(page.locator('.historical-map-node')).toHaveCount(8);
   await expect(page.locator('.curated-badge')).toHaveCount(1);
   await expect(page.locator('#historyGrounding a')).toHaveCount(2);
+  await page.locator('#btnTeacher').click();
+  await expect(page.locator('.teacher-mode-title')).toHaveText('2020 CE vs 2021 CE Classroom Kit');
+  await expect(page.locator('.teacher-mode-overview-card').nth(1)).toContainText(
+    'Compare historical contexts'
+  );
 });
 
 test('uses era-adjusted regions for an ancient year', async ({ page }) => {
@@ -376,6 +411,11 @@ test('explores a decade as a change-over-time view', async ({ page }) => {
     'Defining shift',
     'Supporting shift',
   ]);
+  await page.locator('#btnTeacher').click();
+  await expect(page.locator('.teacher-mode-overview-card').nth(1)).toContainText(
+    'continuity, change, turning points'
+  );
+  await expect(page.locator('.teacher-mode-vocabulary')).toContainText('Continuity And Change');
   await expect(page).toHaveURL(/start=1960&end=1969/);
   await expect(page.locator('#keyEventsOutput')).toBeEmpty();
 });
@@ -389,6 +429,8 @@ test('uses adaptive regions for an ancient period on mobile without overflow', a
   await expect(page.locator('.event-item')).toHaveCount(10);
   await expect(page.locator('#regionProfileNote')).toContainText('Ancient world regions');
   await expect(page.locator('.historical-map-node')).toHaveCount(5);
+  await page.locator('#btnTeacher').click();
+  await expect(page.locator('.teacher-mode-panel')).toBeVisible();
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth
   );

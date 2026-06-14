@@ -7,7 +7,7 @@ Enter a year. See what was happening simultaneously across Europe, Asia, the Ame
 **Live Demo:** [historylens-psi.vercel.app](https://historylens-psi.vercel.app)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-c9a84c.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.9.0-16a085.svg)
+![Version](https://img.shields.io/badge/version-1.10.0-16a085.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 ***
@@ -29,6 +29,7 @@ For any year from ancient history to the present, it produces:
 * **Decade and period views**: explore a custom range of up to 25 years through an opening, pivot, and outcome arc, with two ranked turning points per adaptive region
 * **Scholarship-grade source discovery**: key events retain a chronology anchor and add quality-labeled academic, archival, museum, institutional, or reference sources when authoritative matches are available
 * **Historical geography explorer**: recognizable inline cartography, numbered region navigation, selectable relationship arcs, and layered event context without external tiles or reconstructed-border claims
+* **Teacher Mode**: turn any completed year, period, or comparison into an adjustable classroom kit with objectives, lesson sequencing, discussion prompts, vocabulary, quick checks, and teacher-only printing
 
 ***
 
@@ -84,6 +85,9 @@ historylens/
 │   ├── styles.css      # All CSS — design tokens, components, responsive rules
 │   ├── app.js          # Application state and dashboard rendering
 │   ├── history-api.js  # API client and streaming parser
+│   ├── period-api.js   # Decade and custom-period API client
+│   ├── historical-map.js # Interactive inline geography explorer
+│   ├── teacher-mode.js # Local classroom-kit generation
 │   ├── key-events.js   # Source grounded event panel
 │   └── event-checker.js # On-demand chronology search
 ├── e2e/                # Playwright desktop and mobile tests
