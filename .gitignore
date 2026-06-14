@@ -25,3 +25,7 @@ npm-debug.log*
 # Test artifacts
 test-results/
 playwright-report/
+
+# Generated diagnostics and benchmarks
+api-res*.txt
+benchmark_results.json
