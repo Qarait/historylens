@@ -67,6 +67,9 @@
   function toggle() {
     if (!context || !root) return;
     open = !open;
+    if (open && document.getElementById('btnPerspective')?.getAttribute('aria-pressed') === 'true') {
+      global.HistoryLensPerspectiveMode?.toggle();
+    }
     const button = document.getElementById('btnTeacher');
     button?.classList.toggle('active', open);
     button?.setAttribute('aria-pressed', String(open));

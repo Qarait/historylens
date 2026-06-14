@@ -226,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnHistory')      .addEventListener('click',  toggleHistory);
   document.getElementById('btnShare')        .addEventListener('click',  shareUrl);
   document.getElementById('btnTeacher')      .addEventListener('click',  () => HistoryLensTeacherMode.toggle());
+  document.getElementById('btnPerspective')  .addEventListener('click',  () => HistoryLensPerspectiveMode.toggle());
   document.getElementById('fbPos')           .addEventListener('click',  () => submitFeedback('positive'));
   document.getElementById('fbNeg')           .addEventListener('click',  () => submitFeedback('negative'));
   document.getElementById('btnReport')       .addEventListener('click',  reportIssue);
@@ -612,6 +613,11 @@ async function exploreSingle(year) {
           profile: fullData.__regionProfile,
           data: fullData,
         }]);
+        renderPerspectiveMode('year', [{
+          label: formatYear(year),
+          profile: fullData.__regionProfile,
+          data: fullData,
+        }]);
         if (CONFIG.cacheEnabled) cache.set(year, fullData);
         addToSearchHistory(year, fullData.era_description || '');
         addToTimeline(year, fullData.era_description || '');
@@ -649,6 +655,7 @@ function initResultsContainer(year) {
   document.getElementById('regionsOutput').innerHTML = '<div class="regions-grid"></div>';
   document.getElementById('historicalMapOutput').innerHTML = '';
   HistoryLensTeacherMode.reset(document.getElementById('teacherModeOutput'));
+  HistoryLensPerspectiveMode.reset(document.getElementById('perspectiveModeOutput'));
   HistoryLensKeyEvents.renderControls([year], formatYear);
   HistoryLensEventChecker.renderControls([year], formatYear);
   
@@ -862,6 +869,11 @@ function renderSingle(year, data) {
     profile,
     data,
   }]);
+  renderPerspectiveMode('year', [{
+    label: formatYear(year),
+    profile,
+    data,
+  }]);
   HistoryLensKeyEvents.renderControls([year], formatYear);
   HistoryLensEventChecker.renderControls([year], formatYear);
 
@@ -928,6 +940,11 @@ function renderPeriod(startYear, endYear, data) {
     period: true,
   }]);
   renderTeacherMode('period', [{
+    label: formatPeriod(startYear, endYear),
+    profile,
+    data,
+  }]);
+  renderPerspectiveMode('period', [{
     label: formatPeriod(startYear, endYear),
     profile,
     data,
@@ -1037,6 +1054,7 @@ function renderCompare(year1, data1, year2, data2) {
   output.appendChild(wrapper);
   renderHistoricalMaps(mapViews);
   renderTeacherMode('compare', teacherViews);
+  renderPerspectiveMode('compare', teacherViews);
   HistoryLensKeyEvents.renderControls([year1, year2], formatYear);
   HistoryLensEventChecker.renderControls([year1, year2], formatYear);
 
@@ -1097,6 +1115,13 @@ function renderHistoricalMaps(views) {
 function renderTeacherMode(mode, views) {
   HistoryLensTeacherMode.configure(
     document.getElementById('teacherModeOutput'),
+    { mode, views }
+  );
+}
+
+function renderPerspectiveMode(mode, views) {
+  HistoryLensPerspectiveMode.configure(
+    document.getElementById('perspectiveModeOutput'),
     { mode, views }
   );
 }
@@ -1686,6 +1711,7 @@ function hideResults() {
   document.getElementById('periodArc').classList.remove('visible');
   document.getElementById('historicalMapOutput').innerHTML = '';
   HistoryLensTeacherMode.reset(document.getElementById('teacherModeOutput'));
+  HistoryLensPerspectiveMode.reset(document.getElementById('perspectiveModeOutput'));
   renderHistoryGrounding([]);
   renderRegionProfileNote(null);
   document.getElementById('feedbackBar').style.display = 'none';

@@ -280,11 +280,21 @@
           </svg>
           <span>Teacher Mode</span>
         </button>
+        <button type="button" class="tool-btn perspective-tool-btn" id="btnPerspective" aria-label="Open Perspective Mode" aria-pressed="false" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/>
+          </svg>
+          <span>Perspective</span>
+        </button>
       </div>
     </div>
 
     <!-- Classroom-ready activities derived from the current result -->
     <div id="teacherModeOutput"></div>
+
+    <!-- Evidence-aware analytical lenses derived from the current result -->
+    <div id="perspectiveModeOutput"></div>
 
     <!-- Change-over-time arc for period views -->
     <div class="period-arc" id="periodArc"></div>
@@ -560,7 +570,7 @@
   <div class="footer-bottom">
     <div class="footer-meta">
       <span>© 2026 HistoryLens</span>
-      <span class="footer-version">v1.10.0</span>
+      <span class="footer-version">v1.11.0</span>
       <span>MIT License</span>
       <a href="mailto:hello@historylens.app">hello@historylens.app</a>
     </div>
@@ -575,6 +585,7 @@
 <script src="src/period-api.js"></script>
 <script src="src/historical-map.js"></script>
 <script src="src/teacher-mode.js"></script>
+<script src="src/perspective-mode.js"></script>
 <script src="src/key-events.js"></script>
 <script src="src/event-checker.js"></script>
 <script src="src/app.js"></script>

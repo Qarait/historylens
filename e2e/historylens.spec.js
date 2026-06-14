@@ -323,6 +323,49 @@ test('builds an adaptive classroom kit without another API request', async ({ pa
   expect(historyRequests).toBe(1);
 });
 
+test('reframes a completed year through evidence-aware perspectives without another API request', async ({ page }) => {
+  let historyRequests = 0;
+  page.on('request', request => {
+    if (new URL(request.url()).pathname === '/api/history') historyRequests++;
+  });
+  await page.goto('/');
+  await page.locator('#yearInput').fill('2020');
+  await page.locator('#searchBtn').click();
+
+  await expect(page.locator('#btnPerspective')).toBeEnabled();
+  await page.locator('#btnPerspective').click();
+  await expect(page.locator('.perspective-mode-panel')).toBeVisible();
+  await expect(page.locator('.perspective-mode-title')).toHaveText('2020 CE Perspective Lab');
+  await expect(page.locator('.perspective-mode-guide-card')).toHaveCount(3);
+  await expect(page.locator('.perspective-mode-card')).toHaveCount(4);
+  await expect(page.locator('.perspective-mode-evidence-list')).toHaveCount(4);
+  await expect(page.locator('.perspective-mode-description')).toContainText(
+    'not simulated national or community voices'
+  );
+
+  await page.locator('#perspectiveLens').selectOption('society');
+  await expect(page.locator('.perspective-mode-guide-card').first()).toContainText(
+    'communities, social groups'
+  );
+  await page.locator('#perspectiveVantage').selectOption('0:europe');
+  await expect(page.locator('.perspective-mode-card').first()).toHaveClass(/is-vantage/);
+  await expect(page.locator('.perspective-mode-card').first()).toContainText('Starting vantage');
+  await expect(page.locator('.perspective-mode-notice')).toContainText(
+    'changes the order of attention'
+  );
+  expect(historyRequests).toBe(1);
+});
+
+test('keeps Teacher and Perspective modes visually exclusive', async ({ page }) => {
+  await page.goto('/?year=2020');
+  await page.locator('#btnTeacher').click();
+  await expect(page.locator('.teacher-mode-panel')).toBeVisible();
+  await page.locator('#btnPerspective').click();
+  await expect(page.locator('.teacher-mode-panel')).toHaveCount(0);
+  await expect(page.locator('.perspective-mode-panel')).toBeVisible();
+  await expect(page.locator('#btnTeacher')).toHaveAttribute('aria-pressed', 'false');
+});
+
 test('compares a curated year with a generated year', async ({ page }) => {
   await page.goto('/');
   await page.locator('#compareTrack').click();
@@ -341,6 +384,12 @@ test('compares a curated year with a generated year', async ({ page }) => {
   await expect(page.locator('.teacher-mode-overview-card').nth(1)).toContainText(
     'Compare historical contexts'
   );
+  await page.locator('#btnPerspective').click();
+  await expect(page.locator('.teacher-mode-panel')).toHaveCount(0);
+  await expect(page.locator('.perspective-mode-title')).toHaveText(
+    '2020 CE vs 2021 CE Perspective Lab'
+  );
+  await expect(page.locator('.perspective-mode-card')).toHaveCount(8);
 });
 
 test('uses era-adjusted regions for an ancient year', async ({ page }) => {
@@ -416,6 +465,12 @@ test('explores a decade as a change-over-time view', async ({ page }) => {
     'continuity, change, turning points'
   );
   await expect(page.locator('.teacher-mode-vocabulary')).toContainText('Continuity And Change');
+  await page.locator('#btnPerspective').click();
+  await expect(page.locator('.perspective-mode-card')).toHaveCount(4);
+  await page.locator('#perspectiveLens').selectOption('source');
+  await expect(page.locator('.perspective-mode-evidence-note')).toContainText(
+    '3 chronology sources'
+  );
   await expect(page).toHaveURL(/start=1960&end=1969/);
   await expect(page.locator('#keyEventsOutput')).toBeEmpty();
 });
@@ -431,6 +486,8 @@ test('uses adaptive regions for an ancient period on mobile without overflow', a
   await expect(page.locator('.historical-map-node')).toHaveCount(5);
   await page.locator('#btnTeacher').click();
   await expect(page.locator('.teacher-mode-panel')).toBeVisible();
+  await page.locator('#btnPerspective').click();
+  await expect(page.locator('.perspective-mode-card')).toHaveCount(5);
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth
   );

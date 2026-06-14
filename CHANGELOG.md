@@ -6,6 +6,21 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.11.0] - 2026-06-14
+
+### Added
+- Perspective Mode for completed year, period, and comparison results.
+- State-and-power, lived-experience, economic, ideas-and-culture, and source-critical analytical lenses.
+- Regional vantage selection that changes the order of inquiry without changing the underlying evidence.
+- Per-region evidence summaries, missing-evidence guidance, cross-perspective checks, and a copyable inquiry guide.
+
+### Reliability
+- Perspective prompts are explicitly labeled as analytical frames rather than simulated national, political, or community voices.
+- The mode quotes only evidence already present in the completed result and adds no API request, model cost, dependency, or loading delay.
+- Perspective and Teacher modes are mutually exclusive to keep the result interface focused.
+
+---
+
 ## [1.10.0] - 2026-06-14
 
 ### Added
