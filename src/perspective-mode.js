@@ -352,7 +352,7 @@
       }
     }
     return sources.size
-      ? `Evidence boundary: ${sources.size} chronology source${sources.size === 1 ? '' : 's'} ground the timeline shown above. The lens questions are interpretive prompts; verify them with primary accounts and specialist scholarship before treating them as conclusions.`
+      ? `Evidence boundary: ${sources.size} chronology source${sources.size === 1 ? '' : 's'} ${sources.size === 1 ? 'grounds' : 'ground'} the timeline shown above. The lens questions are interpretive prompts; verify them with primary accounts and specialist scholarship before treating them as conclusions.`
       : 'Evidence boundary: the lens questions are interpretive prompts. Add primary accounts and specialist scholarship before treating them as conclusions.';
   }
 
