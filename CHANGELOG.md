@@ -6,6 +6,19 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.9.0] - 2026-06-14
+
+### Changed
+- Rebuilt historical maps as self-guided geography explorers with more recognizable coastlines, graticules, ocean labels, and numbered regional markers.
+- Added explicit region navigation, previous and next controls, contextual regional patterns, and significance summaries.
+- Made cross-region relationship arcs selectable so their historical connection and wider pattern can be examined directly.
+- Replaced the passive disclaimer with a compact visual legend that explains markers, arcs, and the map's analytical scope.
+
+### Performance
+- The richer explorer remains dependency-free inline SVG and reuses existing result data with no new API or tile requests.
+
+---
+
 ## [1.8.0] - 2026-06-14
 
 ### Added

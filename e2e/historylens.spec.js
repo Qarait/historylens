@@ -250,10 +250,16 @@ test('explores a year and shows cited key events', async ({ page }) => {
     'Supporting 1',
     'Supporting 2',
   ]);
-  await page.locator('.historical-map-node[aria-label^="Asia:"]').click();
+  await page.locator('.historical-map-node[aria-label^="Asia:"] .historical-map-node-pin').click();
   await expect(page.locator('.historical-map-detail-region')).toHaveText('Asia');
   await expect(page.locator('.historical-map-detail-title')).toHaveText('Asia event 1');
-  await page.locator('.historical-map-detail-action').click();
+  await expect(page.locator('.historical-map-region-chip')).toHaveCount(4);
+  await expect(page.locator('.historical-map-region-chip.active')).toContainText('Asia');
+  await page.locator('.historical-map-connection .historical-map-link-badge').click();
+  await expect(page.locator('.historical-map-detail-region')).toHaveText('Cross-region connection');
+  await expect(page.locator('.historical-map-detail-title')).toHaveText('Europe ↔ Asia');
+  await page.locator('.historical-map-region-chip').filter({ hasText: 'Asia' }).click();
+  await page.locator('.historical-map-detail-action.is-primary').click();
   await expect(page.locator('.region-card[data-region="asia"]')).toHaveClass(/map-highlight/);
   await page.locator('.key-events-btn').click();
   await expect(page.locator('.key-event-card')).toHaveCount(7);
