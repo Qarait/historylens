@@ -32,8 +32,8 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "eslint": "^10.5.0",
+    "@playwright/test": "^1.61.1",
+    "eslint": "^10.6.0",
     "html-validate": "^11.5.3",
     "serve": "^14.2.6"
   }
