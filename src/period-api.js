@@ -17,7 +17,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ startYear, endYear }),
+        body: JSON.stringify({ startYear, endYear, language: getLanguage() }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -76,7 +76,7 @@
         name: source.name,
         url: source.url,
         quality: source.quality || 'reference',
-        qualityLabel: source.qualityLabel || 'Reference chronology',
+        qualityLabel: localizeQualityLabel(source.qualityLabel),
       }));
     } catch {
       return [];
@@ -99,5 +99,13 @@
     }
   }
 
+
+  function getLanguage() {
+    return global.HistoryLensI18n?.getLanguage?.() || 'en';
+  }
+
+  function localizeQualityLabel(label) {
+    return global.HistoryLensI18n?.localizedQualityLabel?.(label) || label || 'Reference chronology';
+  }
   global.HistoryLensPeriodApi = { fetchPeriod };
 })(window);

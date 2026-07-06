@@ -6,6 +6,13 @@ export const HISTORY_MAX_TOKENS = 2800;
 export const PERIOD_MAX_TOKENS = 3400;
 export const EVENTS_MAX_TOKENS = 2400;
 export const MAX_PERIOD_YEARS = 25;
+export const SUPPORTED_LANGUAGES = new Set(['en', 'ru']);
+
+export function normalizeLanguage(value) {
+  if (typeof value !== 'string') return 'en';
+  const base = value.trim().toLowerCase().split(/[-_]/)[0];
+  return SUPPORTED_LANGUAGES.has(base) ? base : 'en';
+}
 
 export function parseHistoricalYear(value) {
   const year = Number.parseInt(value, 10);

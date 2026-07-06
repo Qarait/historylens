@@ -7,6 +7,7 @@ import {
   ANTHROPIC_URL,
   HISTORY_MAX_TOKENS,
   MODEL,
+  normalizeLanguage,
   parseHistoricalYear,
 } from './_lib/config.js';
 import { buildHistoryPrompt } from './_lib/prompts.js';
@@ -30,10 +31,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid historical year.' });
   }
   const stream = req.body?.stream === true;
+  const language = normalizeLanguage(req.body?.language);
   const regionProfile = getRegionProfile(year);
   setRegionProfileHeader(res, regionProfile);
   const curated = getCuratedYear(year);
-  if (curated) return sendCuratedResponse(res, curated, stream);
+  if (curated && language === 'en') return sendCuratedResponse(res, curated, stream);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -65,7 +67,7 @@ export default async function handler(req, res) {
         model: MODEL,
         messages: [{
           role: 'user',
-          content: buildHistoryPrompt(year, groundingContext, regionProfile),
+          content: buildHistoryPrompt(year, groundingContext, regionProfile, language),
         }],
         max_tokens: HISTORY_MAX_TOKENS,
         temperature: 0,

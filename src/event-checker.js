@@ -3,6 +3,7 @@
 
   const ENDPOINT = '/api/check-event';
   const cache = new Map();
+  const cacheKeyFor = (year, query) => `${getLanguage()}:${year}:${query.toLowerCase()}`;
 
   function renderControls(years, formatYear) {
     const output = document.getElementById('eventCheckOutput');
@@ -17,13 +18,13 @@
       heading.className = 'event-check-heading';
       const eyebrow = document.createElement('div');
       eyebrow.className = 'event-check-eyebrow';
-      eyebrow.textContent = years.length > 1 ? formatYear(year) : 'Missing Something?';
+      eyebrow.textContent = years.length > 1 ? formatYear(year) : t('eventCheck.eyebrow');
       const title = document.createElement('h2');
       title.className = 'event-check-title';
-      title.textContent = `Check an Event in ${formatYear(year)}`;
+      title.textContent = t('eventCheck.title', { year: formatYear(year) });
       const description = document.createElement('p');
       description.className = 'event-check-description';
-      description.textContent = 'Search the source chronology to see whether an event belongs to this year.';
+      description.textContent = t('eventCheck.description');
       heading.append(eyebrow, title, description);
 
       const form = document.createElement('form');
@@ -33,11 +34,11 @@
       input.minLength = 3;
       input.maxLength = 120;
       input.required = true;
-      input.placeholder = 'e.g. Nagorno-Karabakh War';
-      input.setAttribute('aria-label', `Event to check in ${formatYear(year)}`);
+      input.placeholder = t('eventCheck.placeholder');
+      input.setAttribute('aria-label', t('eventCheck.aria', { year: formatYear(year) }));
       const button = document.createElement('button');
       button.type = 'submit';
-      button.textContent = 'Check chronology';
+      button.textContent = t('eventCheck.button');
       form.append(input, button);
 
       const result = document.createElement('div');
@@ -56,10 +57,10 @@
   async function checkEvent(year, rawQuery, button, result) {
     const query = rawQuery.trim();
     if (query.length < 3) return;
-    const cacheKey = `${year}:${query.toLowerCase()}`;
+    const cacheKey = cacheKeyFor(year, query);
 
     button.disabled = true;
-    button.textContent = 'Checking...';
+    button.textContent = t('eventCheck.checking');
     renderLoading(result);
     try {
       let data = cache.get(cacheKey);
@@ -72,7 +73,7 @@
       renderError(result, error);
     } finally {
       button.disabled = false;
-      button.textContent = 'Check chronology';
+      button.textContent = t('eventCheck.button');
     }
   }
 
@@ -84,7 +85,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ year, query }),
+        body: JSON.stringify({ year, query, language: getLanguage() }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `API ${response.status}`);
@@ -100,7 +101,7 @@
   function renderLoading(container) {
     container.innerHTML = '';
     container.className = 'event-check-result visible loading';
-    container.textContent = 'Searching the year chronology...';
+    container.textContent = t('eventCheck.loading');
   }
 
   function renderResult(container, data) {
@@ -109,7 +110,7 @@
 
     const verdict = document.createElement('div');
     verdict.className = 'event-check-verdict';
-    verdict.textContent = data.found ? 'Found in chronology' : 'No close match found';
+    verdict.textContent = data.found ? t('eventCheck.found') : t('eventCheck.notFound');
     container.appendChild(verdict);
 
     if (data.found) {
@@ -124,7 +125,7 @@
         source.href = match.sourceUrl;
         source.target = '_blank';
         source.rel = 'noopener noreferrer';
-        source.textContent = `Open source: ${match.sourceTitle}`;
+        source.textContent = t('eventCheck.openSource', { title: match.sourceTitle });
         item.append(title, excerpt, source);
         container.appendChild(item);
       }
@@ -139,8 +140,16 @@
   function renderError(container, error) {
     container.innerHTML = '';
     container.className = 'event-check-result visible error';
-    container.textContent = error.message || 'Could not check this event.';
+    container.textContent = error.message || t('eventCheck.error');
   }
 
+
+  function t(key, params) {
+    return global.HistoryLensI18n?.t?.(key, params) || key;
+  }
+
+  function getLanguage() {
+    return global.HistoryLensI18n?.getLanguage?.() || 'en';
+  }
   global.HistoryLensEventChecker = { renderControls };
 })(window);

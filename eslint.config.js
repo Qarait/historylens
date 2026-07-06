@@ -19,6 +19,7 @@ export default [
         URL: 'readonly',
         URLSearchParams: 'readonly',
         IntersectionObserver: 'readonly',
+        CustomEvent: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         setInterval: 'readonly',

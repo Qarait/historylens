@@ -11,6 +11,12 @@ const { default: checkEventHandler } = await import('../api/check-event.js');
 const { enforceRateLimit } = await import('../api/_lib/request.js');
 const { getRegionProfile } = await import('../api/_lib/region-profiles.js');
 const { sampleHistoricalYears } = await import('../api/_lib/wikipedia.js');
+const { normalizeLanguage } = await import('../api/_lib/config.js');
+const {
+  buildHistoryPrompt,
+  buildKeyEventsPrompt,
+  buildPeriodPrompt,
+} = await import('../api/_lib/prompts.js');
 const {
   classifySourceUrl,
   getResearchSources,
@@ -166,6 +172,44 @@ test('history endpoint owns prompt and model settings', async () => {
   assert.equal(res._headers['X-HistoryLens-Grounding'], 'wikipedia');
 });
 
+test('language normalization only allows supported app languages', () => {
+  assert.equal(normalizeLanguage('ru'), 'ru');
+  assert.equal(normalizeLanguage('RU'), 'ru');
+  assert.equal(normalizeLanguage('ru-RU'), 'ru');
+  assert.equal(normalizeLanguage('en-US'), 'en');
+  assert.equal(normalizeLanguage('fr'), 'en');
+  assert.equal(normalizeLanguage(null), 'en');
+});
+
+test('prompts can request natural Russian while preserving schema keys', () => {
+  const profile = getRegionProfile(1885);
+  const historyPrompt = buildHistoryPrompt(1885, '', profile, 'ru');
+  const periodPrompt = buildPeriodPrompt(1914, 1918, '', profile, 'ru');
+  const eventsPrompt = buildKeyEventsPrompt(2020, { context: '{source: Sample Event}' }, 'ru');
+
+  assert.match(historyPrompt, /natural Russian/i);
+  assert.match(historyPrompt, /JSON keys/i);
+  assert.match(periodPrompt, /natural Russian/i);
+  assert.match(eventsPrompt, /natural Russian/i);
+  assert.match(eventsPrompt, /category.*requested language/i);
+});
+
+test('history endpoint forwards Russian language into the owned prompt', async () => {
+  const responses = groundingResponses(2021);
+  globalThis.fetch = async (url, options = {}) => {
+    if (hasHostname(url, 'en.wikipedia.org')) return responses.shift();
+
+    const forwarded = JSON.parse(options.body);
+    assert.match(forwarded.messages[0].content, /natural Russian/i);
+    assert.match(forwarded.messages[0].content, /Year: 2021 CE/);
+    return jsonResponse({ content: [{ text: '{}' }] });
+  };
+
+  const { req, res } = makeMocks({ year: 2021, language: 'ru' });
+  await historyHandler(req, res);
+
+  assert.equal(res._status, 200);
+});
 test('region profiles change at historical era boundaries', () => {
   assert.equal(getRegionProfile(500).id, 'ancient');
   assert.equal(getRegionProfile(501).id, 'medieval');

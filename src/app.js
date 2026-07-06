@@ -13,6 +13,13 @@
 
 'use strict';
 
+const I18N = window.HistoryLensI18n;
+const t = (key, params) => I18N?.t?.(key, params) || key;
+const currentLanguage = () => I18N?.getLanguage?.() || 'en';
+const languageSuffix = () => I18N?.languageSearchParam?.() || '';
+const yearCacheKey = year => `${currentLanguage()}:${year}`;
+const periodCacheKey = (startYear, endYear) => `${currentLanguage()}:${startYear}:${endYear}`;
+
 /* ── CONFIG ─────────────────────────────────────────────────────────────── */
 const CONFIG = {
   hookCycleInterval:  5000,   // ms between landing hook rotations
@@ -33,7 +40,7 @@ const DEFAULT_REGIONS = [
 ];
 
 /* ── STATIC CONTENT ──────────────────────────────────────────────────────── */
-const LOADING_MSGS = [
+const DEFAULT_LOADING_MSGS = [
   'Analyzing global patterns…',
   'Mapping regional developments…',
   'Identifying primary events…',
@@ -127,7 +134,7 @@ const SURPRISE_POOL = [
 ];
 
 /* ── STATE ───────────────────────────────────────────────────────────────── */
-const cache          = new Map();       // year (int) → parsed API response
+const cache          = new Map();       // language:year → parsed API response
 const periodCache    = new Map();
 const searchHistory  = [];              // [{ year, era }]
 let compareMode      = false;
@@ -281,6 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { threshold: 0.1 });
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
+  I18N?.applyStaticTranslations?.();
+  document.addEventListener('historylens:languagechange', handleLanguageChange);
+  setSearchMode(searchMode);
+
   // Landing hook
   startHookCycle();
 
@@ -333,7 +344,7 @@ function toggleCompare() {
   track.classList.toggle('on', compareMode);
   track.setAttribute('aria-pressed', String(compareMode));
   document.getElementById('compareRow').classList.toggle('visible', compareMode);
-  document.getElementById('searchBtn').textContent = compareMode ? 'Explore Comparison' : 'Explore →';
+  document.getElementById('searchBtn').textContent = compareMode ? t('search.exploreComparison') : t('search.explore');
   if (compareMode) document.getElementById('yearInput2').focus();
 }
 
@@ -354,27 +365,34 @@ function setSearchMode(mode) {
   document.getElementById('yearPresets').classList.toggle('hidden', isPeriod);
   document.getElementById('periodPresets').classList.toggle('visible', isPeriod);
   document.getElementById('surpriseBtn').style.display = isPeriod ? 'none' : '';
+  document.getElementById('searchBtn').textContent = compareMode ? t('search.exploreComparison') : t('search.explore');
+  document.getElementById('periodSearchBtn').textContent = t('search.explorePeriod');
   document.getElementById('search-label').textContent = isPeriod
-    ? 'Enter a period to explore change over time'
-    : 'Enter a year to explore';
+    ? t('search.periodLabel')
+    : t('search.yearLabel');
   document.getElementById('search-hint').textContent = isPeriod
-    ? 'Periods may span up to 25 years'
-    : 'Press Enter · Ctrl/Cmd+K to focus';
+    ? t('search.periodHint')
+    : t('search.yearHint');
   document.getElementById(isPeriod ? 'periodStartInput' : 'yearInput').focus();
 }
 
 /* ── YEAR HELPERS ────────────────────────────────────────────────────────── */
 /** Format year as "1821 CE" or "44 BCE" */
 function formatYear(year) {
+  if (currentLanguage() === 'ru') return year < 0 ? `${Math.abs(year)} до н. э.` : `${year} н. э.`;
   return year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`;
 }
 
 function formatPeriod(startYear, endYear) {
   if (startYear < 0 && endYear < 0) {
-    return `${Math.abs(startYear)}-${Math.abs(endYear)} BCE`;
+    return currentLanguage() === 'ru'
+      ? `${Math.abs(startYear)}-${Math.abs(endYear)} до н. э.`
+      : `${Math.abs(startYear)}-${Math.abs(endYear)} BCE`;
   }
   if (startYear > 0 && endYear > 0) {
-    return `${startYear}-${endYear} CE`;
+    return currentLanguage() === 'ru'
+      ? `${startYear}-${endYear} н. э.`
+      : `${startYear}-${endYear} CE`;
   }
   return `${formatYear(startYear)}-${formatYear(endYear)}`;
 }
@@ -409,7 +427,7 @@ function setPeriod(startYear, endYear) {
 function surpriseMe() {
   const year = SURPRISE_POOL[Math.floor(Math.random() * SURPRISE_POOL.length)];
   document.getElementById('yearInput').value = year;
-  showToast(`🎲 Jumping to ${formatYear(year)}…`);
+  showToast(t('toast.jump', { year: formatYear(year) }));
   setTimeout(() => setYear(year), 400);
 }
 
@@ -474,6 +492,18 @@ function cycleHook() {
   renderLandingHook(hookIndex);
 }
 
+function handleLanguageChange() {
+  setSearchMode(searchMode);
+  renderLandingHook(hookIndex);
+  renderThreads();
+  if (currentPeriod) {
+    explorePeriodFromInputs();
+  } else if (currentYear !== null) {
+    explore();
+  }
+}
+
+
 function startHookCycle() {
   renderLandingHook(0);
   hookTimer = setInterval(cycleHook, CONFIG.hookCycleInterval);
@@ -489,19 +519,19 @@ async function explore() {
   const year = parseInt(raw, 10);
 
   if (!raw || isNaN(year)) {
-    showError('Please enter a valid year (e.g. 1821).');
+    showError(t('errors.invalidYear'));
     return;
   }
 
   // Stress Test Fix: Range Validation
   if (year < CONFIG.minYear || year > CONFIG.maxYear) {
-    showError(`Please enter a year between ${CONFIG.minYear} BCE and ${CONFIG.maxYear} CE.`);
+    showError(t('errors.yearRange', { min: Math.abs(CONFIG.minYear), max: CONFIG.maxYear }));
     return;
   }
 
   // Stress Test Fix: Year 0
   if (year === 0) {
-    showError('Year 0 does not exist in the historian\'s calendar. Try 1 BCE or 1 CE.');
+    showError(t('errors.yearZero'));
     return;
   }
 
@@ -516,7 +546,7 @@ async function explore() {
   currentPeriod = null;
 
   // Update URL for shareability
-  const newUrl = `${window.location.pathname}?year=${year}`;
+  const newUrl = `${window.location.pathname}?year=${year}${languageSuffix()}`;
   window.history.pushState({ year }, '', newUrl);
 
   try {
@@ -524,7 +554,7 @@ async function explore() {
       const raw2  = document.getElementById('yearInput2').value.trim();
       const year2 = parseInt(raw2);
       if (!raw2 || isNaN(year2)) {
-        showError('Please enter a second year to compare.');
+        showError(t('errors.secondYear'));
         return;
       }
       await exploreCompare(year, year2);
@@ -537,8 +567,9 @@ async function explore() {
 }
 
 async function exploreSingle(year) {
-  if (CONFIG.cacheEnabled && cache.has(year)) {
-    renderSingle(year, cache.get(year));
+  const key = yearCacheKey(year);
+  if (CONFIG.cacheEnabled && cache.has(key)) {
+    renderSingle(year, cache.get(key));
     return;
   }
 
@@ -618,7 +649,7 @@ async function exploreSingle(year) {
           profile: fullData.__regionProfile,
           data: fullData,
         }]);
-        if (CONFIG.cacheEnabled) cache.set(year, fullData);
+        if (CONFIG.cacheEnabled) cache.set(key, fullData);
         addToSearchHistory(year, fullData.era_description || '');
         addToTimeline(year, fullData.era_description || '');
         
@@ -633,7 +664,7 @@ async function exploreSingle(year) {
        handleFetchError(err);
     } else {
        console.error('Streaming interrupted:', err);
-       showToast('⚠️ Response interrupted, some data may be missing.');
+       showToast(t('toast.interrupted'));
     }
   } finally {
     hideLoading();
@@ -645,9 +676,9 @@ async function exploreSingle(year) {
  */
 function initResultsContainer(year) {
   document.getElementById('periodArc').classList.remove('visible');
-  document.getElementById('hookLabel').textContent = 'The World in This Year';
+  document.getElementById('hookLabel').textContent = t('results.worldThisYear');
   document.getElementById('resultsYear').textContent = formatYear(year);
-  document.getElementById('resultsEra').textContent = 'Analyzing...';
+  document.getElementById('resultsEra').textContent = t('results.analyzing');
   document.getElementById('hookText').innerHTML = '';
   renderHistoryGrounding([]);
   renderRegionProfileNote(activeRegionProfile);
@@ -721,7 +752,7 @@ async function explorePeriodFromInputs() {
   const endYear = parseInt(rawEnd, 10);
 
   if (!rawStart || !rawEnd || isNaN(startYear) || isNaN(endYear)) {
-    showError('Please enter both a start year and an end year.');
+    showError(t('errors.periodBoth'));
     return;
   }
   if (
@@ -732,15 +763,15 @@ async function explorePeriodFromInputs() {
     startYear === 0 ||
     endYear === 0
   ) {
-    showError(`Use historical years between ${CONFIG.minYear} BCE and ${CONFIG.maxYear} CE, excluding year 0.`);
+    showError(t('errors.periodRange', { min: Math.abs(CONFIG.minYear), max: CONFIG.maxYear }));
     return;
   }
   if (startYear >= endYear) {
-    showError('The end year must come after the start year.');
+    showError(t('errors.periodOrder'));
     return;
   }
   if (historicalYearDistance(startYear, endYear) > 24) {
-    showError('Periods may span at most 25 years.');
+    showError(t('errors.periodTooLong'));
     return;
   }
   if (loadingActive) return;
@@ -754,10 +785,10 @@ async function explorePeriodFromInputs() {
   window.history.pushState(
     { startYear, endYear },
     '',
-    `${window.location.pathname}?start=${startYear}&end=${endYear}`
+    `${window.location.pathname}?start=${startYear}&end=${endYear}${languageSuffix()}`
   );
 
-  const key = `${startYear}:${endYear}`;
+  const key = periodCacheKey(startYear, endYear);
   try {
     if (periodCache.has(key)) {
       renderPeriod(startYear, endYear, periodCache.get(key));
@@ -776,17 +807,19 @@ async function explorePeriodFromInputs() {
 }
 
 async function exploreCompare(year1, year2) {
-  const need1 = !cache.has(year1);
-  const need2 = !cache.has(year2);
+  const key1 = yearCacheKey(year1);
+  const key2 = yearCacheKey(year2);
+  const need1 = !cache.has(key1);
+  const need2 = !cache.has(key2);
   if (need1 || need2) showLoading();
 
   try {
     const [data1, data2] = await Promise.all([
-      need1 ? HistoryLensApi.fetchHistory(year1) : Promise.resolve(cache.get(year1)),
-      need2 ? HistoryLensApi.fetchHistory(year2) : Promise.resolve(cache.get(year2)),
+      need1 ? HistoryLensApi.fetchHistory(year1) : Promise.resolve(cache.get(key1)),
+      need2 ? HistoryLensApi.fetchHistory(year2) : Promise.resolve(cache.get(key2)),
     ]);
-    if (need1) { cache.set(year1, data1); addToSearchHistory(year1, data1.era_description || ''); }
-    if (need2) { cache.set(year2, data2); addToSearchHistory(year2, data2.era_description || ''); }
+    if (need1) { cache.set(key1, data1); addToSearchHistory(year1, data1.era_description || ''); }
+    if (need2) { cache.set(key2, data2); addToSearchHistory(year2, data2.era_description || ''); }
     renderCompare(year1, data1, year2, data2);
   } catch (err) {
     handleFetchError(err);
@@ -798,18 +831,18 @@ async function exploreCompare(year1, year2) {
 function handleFetchError(err) {
   const msg = err.message || '';
   if (msg.includes('401') || msg.includes('403')) {
-    showError('Authentication failed. Check your API key.');
+    showError(t('errors.auth'));
     document.getElementById('apiKeyNotice').classList.add('visible');
   } else if (msg.includes('404')) {
-    showError('API endpoint not found. If running locally, please use "vercel dev" instead of a static server.');
+    showError(t('errors.endpoint'));
   } else if (msg.includes('429')) {
-    showError('Rate limit reached. Please wait a moment and try again.');
+    showError(t('errors.rateLimit'));
   } else if (msg.includes('timeout')) {
-    showError('The request timed out. Please try again — the API may be busy.');
+    showError(t('errors.timeout'));
   } else if (msg.includes('parse') || msg.includes('schema')) {
-    showError('Received unexpected data format. Please try again.');
+    showError(t('errors.format'));
   } else {
-    showError('Could not load data. Ensure "vercel dev" is running and your API key is configured.');
+    showError(t('errors.generic'));
   }
   console.error('[HistoryLens]', err);
 }
@@ -823,7 +856,7 @@ function renderSingle(year, data) {
   };
   activeRegionProfile = profile;
   document.getElementById('periodArc').classList.remove('visible');
-  document.getElementById('hookLabel').textContent = 'The World in This Year';
+  document.getElementById('hookLabel').textContent = t('results.worldThisYear');
   // Safe: textContent for all AI-generated plain text
   document.getElementById('resultsYear').textContent = formatYear(year);
   document.getElementById('resultsEra').textContent  = data.era_description || '';
@@ -902,7 +935,7 @@ function renderPeriod(startYear, endYear, data) {
   activeRegionProfile = profile;
   document.getElementById('resultsYear').textContent = formatPeriod(startYear, endYear);
   document.getElementById('resultsEra').textContent = data.era_description || '';
-  document.getElementById('hookLabel').textContent = 'How the World Changed';
+  document.getElementById('hookLabel').textContent = t('results.howWorldChanged');
 
   const hookEl = document.getElementById('hookMoment');
   if (data.hook_moment) {
@@ -996,7 +1029,7 @@ function renderPeriodArc(phases) {
 
 function renderCompare(year1, data1, year2, data2) {
   document.getElementById('periodArc').classList.remove('visible');
-  document.getElementById('hookLabel').textContent = 'The World in This Year';
+  document.getElementById('hookLabel').textContent = t('results.worldThisYear');
   document.getElementById('resultsYear').textContent = `${formatYear(year1)} vs ${formatYear(year2)}`;
   document.getElementById('resultsEra').textContent  = `${data1.era_description || ''} · ${data2.era_description || ''}`;
   document.getElementById('globalContext').classList.remove('visible');
@@ -1083,12 +1116,12 @@ function renderHistoryGrounding(items) {
     badge.className = 'curated-badge';
     const reviewedDates = [...new Set(curated.map(item => item.reviewedAt).filter(Boolean))];
     badge.textContent = reviewedDates.length === 1
-      ? `Curated edition · reviewed ${reviewedDates[0]}`
-      : 'Curated editions';
+      ? t('sources.curatedReviewed', { date: reviewedDates[0] })
+      : t('sources.curatedEditions');
     container.append(badge, document.createTextNode(' '));
   }
 
-  container.append('Evidence: ');
+  container.append(`${t('sources.evidence')} `);
   unique.forEach((item, index) => {
     if (index > 0) container.append(' · ');
     const citation = document.createElement('span');
@@ -1101,7 +1134,7 @@ function renderHistoryGrounding(items) {
     citation.appendChild(link);
     const quality = document.createElement('span');
     quality.className = `source-quality source-quality-${item.quality || 'reference'}`;
-    quality.textContent = item.qualityLabel || 'Reference chronology';
+    quality.textContent = I18N?.localizedQualityLabel?.(item.qualityLabel) || item.qualityLabel || t('sources.referenceChronology');
     citation.appendChild(quality);
     container.appendChild(citation);
   });
@@ -1133,7 +1166,7 @@ function renderRegionProfileNote(profile) {
     note.classList.remove('visible');
     return;
   }
-  note.textContent = `${profile.label}: regions reflect the political and cultural worlds of this period.`;
+  note.textContent = t('regionProfile.note', { label: profile.label });
   note.classList.add('visible');
 }
 
@@ -1195,7 +1228,7 @@ function buildCard(region, rd, options = {}) {
   const eventsSection = document.createElement('div');
   const evTitle = document.createElement('div');
   evTitle.className = 'section-title';
-  evTitle.textContent = options.period ? 'Key Turning Points' : 'Key Events';
+  evTitle.textContent = options.period ? t('results.keyTurningPoints') : t('results.keyEvents');
   eventsSection.appendChild(evTitle);
 
   const list = document.createElement('ul');
@@ -1208,7 +1241,7 @@ function buildCard(region, rd, options = {}) {
     if (isPrimary) {
       const top = document.createElement('div');
       top.className = 'primary-top';
-      const primaryLabel = options.period ? 'Defining shift' : 'Primary';
+      const primaryLabel = options.period ? t('results.definingShift') : t('results.primary');
       top.innerHTML = `<span class="event-year">${esc(String(ev.year))}</span><span class="event-rank primary">${esc(primaryLabel)}</span>`;
       item.appendChild(top);
 
@@ -1229,7 +1262,7 @@ function buildCard(region, rd, options = {}) {
       const content = document.createElement('div');
       const rank = document.createElement('div');
       rank.className = 'event-rank secondary';
-      rank.textContent = options.period ? 'Supporting shift' : 'Supporting';
+      rank.textContent = options.period ? t('results.supportingShift') : t('results.supporting');
 
       const title = document.createElement('div');
       title.className = 'event-title';
@@ -1256,7 +1289,7 @@ function buildCard(region, rd, options = {}) {
     const figSection = document.createElement('div');
     const figTitle = document.createElement('div');
     figTitle.className = 'section-title';
-    figTitle.textContent = 'Notable Figures';
+    figTitle.textContent = t('results.notableFigures');
     figSection.appendChild(figTitle);
 
     const row = document.createElement('div');
@@ -1278,7 +1311,7 @@ function buildCard(region, rd, options = {}) {
 
     const whyLabel = document.createElement('div');
     whyLabel.className = 'why-matters-label';
-    whyLabel.textContent = 'Why it matters';
+    whyLabel.textContent = t('results.whyItMatters');
     why.appendChild(whyLabel);
 
     const whyText = document.createElement('div');
@@ -1302,8 +1335,8 @@ function buildCrossRegionBlock(crossData, regions = DEFAULT_REGIONS) {
   const header = document.createElement('div');
   header.className = 'cross-region-header';
   header.innerHTML = `
-    <span class="cross-region-title">🌍 Global Contrast</span>
-    <span class="cross-region-pill">Cross-Regional Analysis</span>`;
+    <span class="cross-region-title">🌍 ${esc(t('results.globalContrast'))}</span>
+    <span class="cross-region-pill">${esc(t('results.crossRegional'))}</span>`;
   block.appendChild(header);
 
   const body = document.createElement('div');
@@ -1353,8 +1386,11 @@ function renderSignals(signals) {
   }
 
   items.innerHTML = '';
-  for (const [key, label] of Object.entries(SIGNAL_LABELS)) {
-    const val = signals[key] || '—';
+  for (const key of Object.keys(SIGNAL_LABELS)) {
+    const label = t(`signals.${key}`);
+    const rawVal = signals[key] || '—';
+    const translatedVal = t(`signalValue.${rawVal}`);
+    const val = translatedVal === `signalValue.${rawVal}` ? rawVal : translatedVal;
     const cls = val.toLowerCase().replace(/\s+/g, '');
 
     const item = document.createElement('div');
@@ -1622,7 +1658,7 @@ function shareUrl() {
   const query = currentPeriod
     ? `start=${currentPeriod.startYear}&end=${currentPeriod.endYear}`
     : `year=${currentYear}`;
-  const url = `${window.location.origin}${window.location.pathname}?${query}`;
+  const url = `${window.location.origin}${window.location.pathname}?${query}${languageSuffix()}`;
   
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url)
@@ -1663,6 +1699,13 @@ function finishProgress() {
 }
 
 /* ── LOADING UI ──────────────────────────────────────────────────────────── */
+function loadingMessages() {
+  return DEFAULT_LOADING_MSGS.map((fallback, index) => {
+    const translated = t(`loading.${index}`);
+    return translated === `loading.${index}` ? fallback : translated;
+  });
+}
+
 function showLoading() {
   loadingActive = true;
   document.getElementById('loadingSection').classList.add('active');
@@ -1671,14 +1714,15 @@ function showLoading() {
   startProgress();
   let msgIndex = 0;
   const statusEl = document.getElementById('loadingStatus');
-  statusEl.textContent = LOADING_MSGS[0];
+  const loadingMsgs = loadingMessages();
+  statusEl.textContent = loadingMsgs[0];
   loadingTimer = setInterval(() => {
-    msgIndex = (msgIndex + 1) % LOADING_MSGS.length;
-    statusEl.textContent = LOADING_MSGS[msgIndex];
+    msgIndex = (msgIndex + 1) % loadingMsgs.length;
+    statusEl.textContent = loadingMsgs[msgIndex];
   }, CONFIG.loadingMsgInterval);
   slowWarningTimer = setTimeout(() => {
     clearInterval(loadingTimer);
-    statusEl.textContent = 'Taking longer than usual — the API may be busy.';
+    statusEl.textContent = t('loading.slow');
   }, 10000);
 }
 

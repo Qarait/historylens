@@ -3,10 +3,10 @@
 
   const HISTORY_ENDPOINT = '/api/history';
   const DEFAULT_REGIONS = [
-    { id: 'europe', label: 'Europe', sub: 'Western & Eastern Europe', icon: '🏰', color: '#c0392b' },
-    { id: 'asia', label: 'Asia', sub: 'East, South, Central Asia & Middle East', icon: '🏯', color: '#16a085' },
-    { id: 'namerica', label: 'The Americas', sub: 'North, Central & South America', icon: '🌎', color: '#2980b9' },
-    { id: 'africa', label: 'Africa', sub: 'Sub-Saharan & North Africa', icon: '🌍', color: '#d4ac0d' },
+    { id: 'europe', label: 'Europe', sub: 'Western & Eastern Europe', icon: 'ðŸ°', color: '#c0392b' },
+    { id: 'asia', label: 'Asia', sub: 'East, South, Central Asia & Middle East', icon: 'ðŸ¯', color: '#16a085' },
+    { id: 'namerica', label: 'The Americas', sub: 'North, Central & South America', icon: 'ðŸŒŽ', color: '#2980b9' },
+    { id: 'africa', label: 'Africa', sub: 'Sub-Saharan & North Africa', icon: 'ðŸŒ', color: '#d4ac0d' },
   ];
 
   async function fetchHistoryStream(year, callbacks) {
@@ -76,7 +76,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ year, stream }),
+        body: JSON.stringify({ year, stream, language: getLanguage() }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -204,8 +204,8 @@
       url,
       quality: response.headers.get('X-HistoryLens-Source-Quality') || 'reference',
       qualityLabel: response.headers.get('X-HistoryLens-Curated') === 'true'
-        ? 'Reviewed edition'
-        : 'Reference chronology',
+        ? label('sources.reviewedEdition')
+        : label('sources.referenceChronology'),
       curated: response.headers.get('X-HistoryLens-Curated') === 'true',
       reviewedAt: response.headers.get('X-HistoryLens-Reviewed-At') || '',
     };
@@ -227,5 +227,13 @@
     }
   }
 
+
+  function getLanguage() {
+    return global.HistoryLensI18n?.getLanguage?.() || 'en';
+  }
+
+  function label(key) {
+    return global.HistoryLensI18n?.t?.(key) || (key.includes('reviewed') ? 'Reviewed edition' : 'Reference chronology');
+  }
   global.HistoryLensApi = { fetchHistory, fetchHistoryStream };
 })(window);
