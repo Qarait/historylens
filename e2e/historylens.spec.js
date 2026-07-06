@@ -143,7 +143,7 @@ function periodFor(startYear, endYear, profile) {
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/history', async route => {
     const requestBody = route.request().postDataJSON();
-    expect(Object.keys(requestBody).sort()).toEqual(['stream', 'year']);
+    expect(Object.keys(requestBody).sort()).toEqual(['language', 'stream', 'year']);
 
     const profile = requestBody.year <= 500 ? ancientProfile : modernProfile;
     const responseData = historyFor(requestBody.year, profile);
@@ -182,7 +182,7 @@ test.beforeEach(async ({ page }) => {
 
   await page.route('**/api/period', async route => {
     const requestBody = route.request().postDataJSON();
-    expect(Object.keys(requestBody).sort()).toEqual(['endYear', 'startYear']);
+    expect(Object.keys(requestBody).sort()).toEqual(['endYear', 'language', 'startYear']);
     const midpoint = Math.trunc((requestBody.startYear + requestBody.endYear) / 2);
     const profile = midpoint <= 500 ? ancientProfile : modernProfile;
     const responseData = periodFor(requestBody.startYear, requestBody.endYear, profile);
@@ -210,7 +210,7 @@ test.beforeEach(async ({ page }) => {
 
   await page.route('**/api/check-event', async route => {
     const requestBody = route.request().postDataJSON();
-    expect(Object.keys(requestBody).sort()).toEqual(['query', 'year']);
+    expect(Object.keys(requestBody).sort()).toEqual(['language', 'query', 'year']);
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -234,6 +234,17 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test('switches app chrome and API requests to Russian', async ({ page }) => {
+  await page.goto('/?lang=ru');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+  await expect(page.locator('#searchBtn')).toContainText('Исследовать');
+  await expect(page.locator('.hero-title')).toContainText('любой год');
+
+  await page.locator('#yearInput').fill('1885');
+  await page.locator('#searchBtn').click();
+  await expect(page.locator('#hookLabel')).toContainText('Мир в этот год');
+  await expect(page.locator('.section-title').first()).toContainText('Ключевые события');
+});
 test('explores a year and shows cited key events', async ({ page }) => {
   await page.goto('/');
   await page.locator('#yearInput').fill('2020');

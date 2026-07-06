@@ -7,6 +7,7 @@ import {
   ANTHROPIC_URL,
   EVENTS_MAX_TOKENS,
   MODEL,
+  normalizeLanguage,
   parseHistoricalYear,
 } from './_lib/config.js';
 import { buildKeyEventsPrompt } from './_lib/prompts.js';
@@ -21,6 +22,7 @@ export default async function handler(req, res) {
   }
   if (!await enforceRateLimit(req, res, { scope: 'events', limit: 12 })) return;
 
+  const language = normalizeLanguage(req.body?.language);
   const year = parseHistoricalYear(req.body?.year);
   if (year === null) {
     return res.status(400).json({ error: 'Invalid historical year.' });
@@ -56,7 +58,7 @@ export default async function handler(req, res) {
         model: MODEL,
         max_tokens: EVENTS_MAX_TOKENS,
         temperature: 0,
-        messages: [{ role: 'user', content: buildKeyEventsPrompt(year, grounding) }],
+        messages: [{ role: 'user', content: buildKeyEventsPrompt(year, grounding, language) }],
       }),
     });
 

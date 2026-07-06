@@ -3,6 +3,7 @@
 
   const EVENTS_ENDPOINT = '/api/events';
   const cache = new Map();
+  const cacheKey = year => `${getLanguage()}:${year}`;
 
   function renderControls(years, formatYear) {
     const output = document.getElementById('keyEventsOutput');
@@ -20,20 +21,20 @@
 
       const eyebrow = document.createElement('div');
       eyebrow.className = 'key-events-eyebrow';
-      eyebrow.textContent = years.length > 1 ? formatYear(year) : 'Go Beyond the Dashboard';
+      eyebrow.textContent = years.length > 1 ? formatYear(year) : t('keyEvents.eyebrow');
       const title = document.createElement('h2');
       title.className = 'key-events-title';
-      title.textContent = `7 Key Events of ${formatYear(year)}`;
+      title.textContent = t('keyEvents.title', { year: formatYear(year) });
       const description = document.createElement('p');
       description.className = 'key-events-description';
-      description.textContent = 'Explore source-grounded events selected for lasting political, social, scientific, economic, or cultural impact.';
+      description.textContent = t('keyEvents.description');
       copy.append(eyebrow, title, description);
 
       const button = document.createElement('button');
       button.className = 'key-events-btn';
       button.type = 'button';
       button.setAttribute('aria-expanded', 'false');
-      button.textContent = 'View 7 Key Events';
+      button.textContent = t('keyEvents.view');
       button.addEventListener('click', () => toggle(year, section, button, formatYear));
 
       intro.append(copy, button);
@@ -51,16 +52,17 @@
     if (section.classList.contains('open')) {
       section.classList.remove('open');
       button.setAttribute('aria-expanded', 'false');
-      button.textContent = 'View 7 Key Events';
+      button.textContent = t('keyEvents.view');
       return;
     }
 
     section.classList.add('open');
     button.setAttribute('aria-expanded', 'true');
-    button.textContent = 'Hide Key Events';
+    button.textContent = t('keyEvents.hide');
 
-    if (cache.has(year)) {
-      renderList(body, cache.get(year));
+    const key = cacheKey(year);
+    if (cache.has(key)) {
+      renderList(body, cache.get(key));
       return;
     }
 
@@ -68,7 +70,7 @@
     button.disabled = true;
     try {
       const data = await fetchEvents(year);
-      cache.set(year, data);
+      cache.set(key, data);
       renderList(body, data);
     } catch (error) {
       renderError(body, year, error, formatYear);
@@ -85,7 +87,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ year }),
+        body: JSON.stringify({ year, language: getLanguage() }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -112,7 +114,7 @@
     spinner.className = 'key-events-spinner';
     spinner.setAttribute('aria-hidden', 'true');
     const text = document.createElement('span');
-    text.textContent = `Checking historical sources for ${yearLabel}...`;
+    text.textContent = t('keyEvents.loading', { year: yearLabel });
     loading.append(spinner, text);
     container.appendChild(loading);
   }
@@ -121,7 +123,7 @@
     container.innerHTML = '';
     const note = document.createElement('p');
     note.className = 'key-events-note';
-    note.textContent = data.selection_note || 'Selected for historical consequence and geographic breadth.';
+    note.textContent = data.selection_note || t('keyEvents.note');
     container.appendChild(note);
 
     const list = document.createElement('ol');
@@ -132,13 +134,13 @@
     if (data.grounding?.url) {
       const attribution = document.createElement('div');
       attribution.className = 'key-events-attribution';
-      attribution.append('Chronology anchor: ');
+      attribution.append(`${t('keyEvents.anchor')} `);
       const link = document.createElement('a');
       link.href = data.grounding.url;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.textContent = data.grounding.name || 'Wikipedia contributors';
-      attribution.append(link, '. Additional sources are discovery aids; inspect them before formal citation.');
+      attribution.append(link, `. ${t('keyEvents.anchorSuffix')}`);
       container.appendChild(attribution);
     }
   }
@@ -163,14 +165,14 @@
 
     const title = document.createElement('h3');
     title.className = 'key-event-title';
-    title.textContent = event.title || 'Untitled event';
+    title.textContent = event.title || t('keyEvents.untitled');
     const summary = document.createElement('p');
     summary.className = 'key-event-summary';
     summary.textContent = event.summary || '';
     const significance = document.createElement('p');
     significance.className = 'key-event-significance';
     const label = document.createElement('strong');
-    label.textContent = 'Why it mattered: ';
+    label.textContent = t('keyEvents.why');
     significance.append(label, document.createTextNode(event.significance || ''));
     content.append(meta, title, summary, significance);
 
@@ -180,7 +182,7 @@
         title: event.source_title || 'Wikipedia',
         url: event.source_url,
         quality: 'reference',
-        qualityLabel: 'Reference chronology',
+        qualityLabel: t('sources.referenceChronology'),
       });
     }
     if (Array.isArray(event.sources)) sources.push(...event.sources);
@@ -195,7 +197,7 @@
     wrap.className = 'key-event-sources';
     const label = document.createElement('div');
     label.className = 'key-event-sources-label';
-    label.textContent = 'Research sources';
+    label.textContent = t('keyEvents.sources');
     wrap.appendChild(label);
 
     const seen = new Set();
@@ -207,14 +209,14 @@
 
       const quality = document.createElement('span');
       quality.className = `source-quality source-quality-${item.quality || 'reference'}`;
-      quality.textContent = item.qualityLabel || 'Reference';
+      quality.textContent = global.HistoryLensI18n?.localizedQualityLabel?.(item.qualityLabel) || item.qualityLabel || t('keyEvents.reference');
 
       const source = document.createElement('a');
       source.className = 'key-event-source';
       source.href = item.url;
       source.target = '_blank';
       source.rel = 'noopener noreferrer';
-      source.textContent = item.title || item.publisher || 'Open source';
+      source.textContent = item.title || item.publisher || t('keyEvents.openSource');
 
       row.append(quality, source);
       if (item.publicationYear) {
@@ -233,15 +235,15 @@
     const box = document.createElement('div');
     box.className = 'key-events-error';
     const message = document.createElement('span');
-    message.textContent = error.message || 'Could not load key events.';
+    message.textContent = error.message || t('keyEvents.error');
     const retry = document.createElement('button');
     retry.type = 'button';
-    retry.textContent = 'Try again';
+    retry.textContent = t('keyEvents.retry');
     retry.addEventListener('click', async () => {
       renderLoading(container, formatYear(year));
       try {
         const data = await fetchEvents(year);
-        cache.set(year, data);
+        cache.set(cacheKey(year), data);
         renderList(container, data);
       } catch (retryError) {
         renderError(container, year, retryError, formatYear);
@@ -251,5 +253,13 @@
     container.appendChild(box);
   }
 
+
+  function t(key, params) {
+    return global.HistoryLensI18n?.t?.(key, params) || key;
+  }
+
+  function getLanguage() {
+    return global.HistoryLensI18n?.getLanguage?.() || 'en';
+  }
   global.HistoryLensKeyEvents = { renderControls };
 })(window);

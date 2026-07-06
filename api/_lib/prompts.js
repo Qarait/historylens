@@ -1,10 +1,12 @@
 import {
   formatHistoricalPeriod,
   formatHistoricalYear,
+  normalizeLanguage,
 } from './config.js';
 
-export function buildHistoryPrompt(year, groundingContext = '', regionProfile) {
+export function buildHistoryPrompt(year, groundingContext = '', regionProfile, language = 'en') {
   const yearLabel = formatHistoricalYear(year);
+  const languageRules = buildLanguageInstructions(language);
   const profile = regionProfile;
   const regionIds = profile.regions.map(region => region.id);
   const regionSchema = profile.regions
@@ -23,6 +25,7 @@ export function buildHistoryPrompt(year, groundingContext = '', regionProfile) {
   return `You are a senior historian writing for an analytical audience. Year: ${yearLabel}.
 Return ONLY valid JSON. No markdown, no backticks, no prose outside the JSON.
 
+${languageRules}
 TONE RULES - enforce on every sentence:
 BANNED words: ongoing, attempted, continued, various, numerous, significant, important, experienced, saw, witnessed, underwent, faced, "played a role", "attempted reforms"
 PREFERRED verbs: triggered, consolidated, fractured, collapsed, accelerated, cemented, destabilized, expanded, contracted, eclipsed, redirected, dismantled, upended, reinforced, exposed, suppressed, entrenched, imposed
@@ -79,9 +82,11 @@ export function buildPeriodPrompt(
   startYear,
   endYear,
   groundingContext = '',
-  regionProfile
+  regionProfile,
+  language = 'en'
 ) {
   const periodLabel = formatHistoricalPeriod(startYear, endYear);
+  const languageRules = buildLanguageInstructions(language);
   const profile = regionProfile;
   const regionIds = profile.regions.map(region => region.id);
   const regionSchema = profile.regions
@@ -100,6 +105,7 @@ export function buildPeriodPrompt(
   return `You are a senior world historian analyzing change over time. Period: ${periodLabel}.
 Return ONLY valid JSON. No markdown, no backticks, no prose outside the JSON.
 
+${languageRules}
 ANALYTICAL GOAL:
 - Explain what changed between the opening and closing of the period.
 - Identify an opening condition, a decisive pivot, and an outcome.
@@ -161,11 +167,13 @@ HARD CONSTRAINTS:
 - Return JSON only.`;
 }
 
-export function buildKeyEventsPrompt(year, grounding) {
+export function buildKeyEventsPrompt(year, grounding, language = 'en') {
   const yearLabel = formatHistoricalYear(year);
+  const languageRules = buildLanguageInstructions(language);
 
   return `You are a careful world historian. Select exactly seven key events from the supplied chronology for ${yearLabel}.
 
+${languageRules}
 SELECTION RULES:
 - Use only events explicitly supported by the GROUNDING CHRONOLOGY below.
 - Rank by lasting political, territorial, social, scientific, economic, environmental, or cultural consequence.
@@ -188,7 +196,7 @@ Return only valid JSON with this exact structure:
       "title": "Specific event name",
       "date": "Date or date range within ${yearLabel}",
       "location": "Country or region",
-      "category": "Conflict | Politics | Society | Science | Economy | Culture | Environment",
+      "category": "Short category label in requested language",
       "summary": "Two concise factual sentences describing what happened.",
       "significance": "One concise sentence explaining the lasting consequence.",
       "source_title": "Exact source title copied from the grounding chronology"
@@ -201,4 +209,19 @@ HARD CONSTRAINTS:
 - All seven fields must be non-empty strings for every event.
 - Every source_title must appear verbatim in the grounding chronology.
 - Return JSON only, with no markdown fences or commentary.`;
+}
+
+function buildLanguageInstructions(language) {
+  const normalized = normalizeLanguage(language);
+  if (normalized === 'ru') {
+    return `LANGUAGE RULES:
+- Write all user-facing JSON string values in natural Russian.
+- Keep JSON keys, region IDs, rank values, and global_signals values exactly as specified in English.
+- Keep source_title values exactly as shown in the grounding chronology.
+- Proper nouns and source titles may remain in their established original form when translation would be awkward.
+- Do not mix English UI labels into Russian prose.`;
+  }
+  return `LANGUAGE RULES:
+- Write all user-facing JSON string values in natural English.
+- Keep JSON keys, region IDs, rank values, and global_signals values exactly as specified.`;
 }

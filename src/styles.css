@@ -115,6 +115,33 @@ nav {
 .nav-cta:hover { opacity: 0.85; }
 .nav-mobile-btn { display: none; background: none; border: none; color: var(--text-2); font-size: 1.3rem; cursor: pointer; padding: 0.4rem; line-height: 1; }
 
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.16rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.03);
+}
+.language-btn {
+  min-width: 2.05rem;
+  padding: 0.25rem 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-3);
+  font: 700 0.68rem 'Inter', sans-serif;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.language-btn.active {
+  background: var(--gold);
+  color: #0d0d0f;
+}
+.language-btn:not(.active):hover { color: var(--text); }
+.mobile-language-switcher { align-self: flex-start; margin-top: 0.3rem; }
+
 /* Mobile nav drawer */
 .mobile-nav {
   display: none; position: fixed; top: 60px; left: 0; right: 0;
@@ -927,6 +954,7 @@ footer { background: var(--bg-2); border-top: 1px solid var(--border); padding: 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .nav-links, .nav-cta  { display: none; }
+  nav > .language-switcher { margin-left: auto; margin-right: 0.5rem; }
   .nav-mobile-btn       { display: block; }
   .hero                 { padding: 2.5rem 1.2rem 0; }
   .hero-stats           { gap: 1.3rem; }

@@ -7,6 +7,7 @@ import {
   ANTHROPIC_URL,
   MAX_PERIOD_YEARS,
   MODEL,
+  normalizeLanguage,
   PERIOD_MAX_TOKENS,
   historicalYearDistance,
   parseHistoricalYear,
@@ -26,6 +27,7 @@ export default async function handler(req, res) {
   }
   if (!await enforceRateLimit(req, res, { scope: 'period', limit: 6 })) return;
 
+  const language = normalizeLanguage(req.body?.language);
   const startYear = parseHistoricalYear(req.body?.startYear);
   const endYear = parseHistoricalYear(req.body?.endYear);
   if (startYear === null || endYear === null || startYear >= endYear) {
@@ -77,7 +79,8 @@ export default async function handler(req, res) {
             startYear,
             endYear,
             groundingContext,
-            regionProfile
+            regionProfile,
+            language
           ),
         }],
         max_tokens: PERIOD_MAX_TOKENS,
