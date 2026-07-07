@@ -15,7 +15,7 @@ export function normalizeLanguage(value) {
 }
 
 export function localizedMaxTokens(baseTokens, language) {
-  return normalizeLanguage(language) === 'ru' ? Math.ceil(baseTokens * 1.6) : baseTokens;
+  return normalizeLanguage(language) === 'ru' ? Math.ceil(baseTokens * 2.8) : baseTokens;
 }
 
 export function parseHistoricalYear(value) {
