@@ -21,6 +21,77 @@
       'hero.yearsCovered': 'Years Covered',
       'hero.worldRegions': 'World Regions',
       'hero.always': 'Always',
+      'landing.exampleLabel': 'Example output — year 1453',
+      'landing.exampleEra': 'The Age of Imperial Collision',
+      'landing.exampleHookHtml': 'While the <strong>Ottoman Empire</strong> dismantled the last remnant of <strong>Rome</strong> by seizing Constantinople, <strong>Ming China</strong> had already retreated from global projection — and the <strong>Americas</strong> remained entirely outside the awareness of either.',
+      'landing.exampleRegionEurope': 'Europe',
+      'landing.exampleRegionAsia': 'Asia',
+      'landing.exampleRegionAmericas': 'The Americas',
+      'landing.exampleRegionAfrica': 'Africa',
+      'landing.exampleThesisEurope': '"A thousand-year empire erased in a single siege"',
+      'landing.exampleThesisAsia': '"Ottoman expansion reshapes the known world"',
+      'landing.exampleThesisAmericas': '"Civilizations at peak — unaware of the coming storm"',
+      'landing.exampleThesisAfrica': '"Songhai eclipses Mali as the continent\'s dominant power"',
+      'landing.exampleEventEurope': '⭐ Fall of Constantinople ends the Byzantine era and redirects European trade westward',
+      'landing.exampleEventAsia': '⭐ Mehmed II\'s conquest cements Ottoman dominance over eastern Mediterranean trade routes',
+      'landing.exampleEventAmericas': '⭐ Aztec Triple Alliance consolidates central Mexico, 40 years before contact',
+      'landing.exampleEventAfrica': '⭐ Songhai expansion under Sunni Ali accelerates West African trade consolidation',
+      'landing.exampleContrastHtml': '<strong>Global Contrast —</strong> While Constantinople\'s fall forced European merchants to seek Atlantic routes, West African and Mesoamerican powers operated at peak capacity — entirely uncoupled from the Mediterranean crisis reshaping Eurasia.',
+      'landing.exampleCta': '→ Run this year live',
+      'landing.howLabel': 'How it works',
+      'landing.how.0.title': 'Identify key global events',
+      'landing.how.0.desc': 'Locate the most historically significant developments in each region for the given year.',
+      'landing.how.1.title': 'Rank by historical impact',
+      'landing.how.1.desc': 'One primary event per region. Two supporting. Hierarchy reflects consequence, not recency.',
+      'landing.how.2.title': 'Compare across regions',
+      'landing.how.2.desc': 'Regions placed side by side to expose simultaneous patterns, contrasts, and blind spots.',
+      'landing.how.3.title': 'Generate a global analysis',
+      'landing.how.3.desc': 'A structured cross-regional contrast surfaces the relationships between what was happening everywhere at once.',
+      'landing.whoLabel': "Who it's for",
+      'landing.who.0.who': 'Students',
+      'landing.who.0.title': 'Understand context, not memorize facts',
+      'landing.who.0.bullet.0': 'Place events in global context',
+      'landing.who.0.bullet.1': 'Spot patterns across civilizations',
+      'landing.who.0.bullet.2': 'Build arguments, not just timelines',
+      'landing.who.1.who': 'Teachers & Educators',
+      'landing.who.1.title': 'Explain global dynamics without the prep',
+      'landing.who.1.bullet.0': 'Instant cross-regional comparisons',
+      'landing.who.1.bullet.1': 'Printable structured analysis',
+      'landing.who.1.bullet.2': 'Pairs with any curriculum',
+      'landing.who.2.who': 'Curious Readers',
+      'landing.who.2.title': 'Explore history the way it actually happened',
+      'landing.who.2.bullet.0': 'Follow curated historical threads',
+      'landing.who.2.bullet.1': 'Compare any two years side by side',
+      'landing.who.2.bullet.2': 'Build your own exploration timeline',
+      'landing.trust.0': 'Free — no account required',
+      'landing.trust.1': 'Based on widely accepted historical records',
+      'landing.trust.2': 'Built for exploration, not as a primary source',
+      'landing.trust.3': 'Open source · MIT License',
+      'landing.trustDisclaimer': 'Always verify important claims with textbooks, encyclopedias, and primary sources. Key events and chronology checks include source links; verify interpretation with specialist scholarship.',
+      'landing.threadsLabel': 'Curated Threads',
+      'landing.manifestoEyebrow': 'What this reveals',
+      'landing.manifestoHeadingHtml': 'History is not a sequence of events.<br/>It is a set of simultaneous conditions.',
+      'landing.manifesto.0': 'Most history education teaches one region at a time — one empire, one war, one century. The result is a mental model of the past built from <strong>isolated narratives</strong> that never intersect. Students learn what happened in Europe during the Renaissance, or what happened in China during the Ming dynasty, but rarely both — and almost never at the same moment.',
+      'landing.manifesto.1': 'This matters because <strong>the patterns that shaped the modern world only become visible when you see them together.</strong> The Ottoman expansion that rerouted European trade. The simultaneous collapse of multiple empires in 1918. The way the Black Death reached Asia, the Middle East, and Europe within years of each other — not as separate events, but as a single catastrophe moving across an interconnected world.',
+      'landing.manifesto.2': 'HistoryLens is built on a simple premise: <strong>placing regions side by side reveals what no single timeline can show.</strong> When you see that Columbus reached the Americas the same decade the Ottoman Empire consolidated eastern Mediterranean trade routes, you stop seeing 1492 as a "discovery" and start seeing it as a consequence — a redirection of European ambition forced by blocked eastern paths.',
+      'landing.manifesto.3': 'That kind of contextual understanding cannot be built from facts alone. It requires <strong>comparison, contrast, and the willingness to look at the whole world at once.</strong> Not to replace primary sources or scholarly research — but to give students, teachers, and curious readers a structured starting point for thinking globally about any moment in human history.',
+      'landing.manifestoPull.0': '<strong>World regions, side by side</strong>Europe, Asia, the Americas, and Africa — every search, every time.',
+      'landing.manifestoPull.1': '<strong>Years of simultaneous history</strong>From ancient Mesopotamia to the early 21st century.',
+      'landing.manifestoPull.2': '<strong>Core question behind every search</strong>"What else was happening — everywhere else — at exactly this moment?"',
+      'landing.footerDesc': 'Understand what the world looked like in any year. Compare regions, detect patterns, and understand global shifts — not just isolated events.',
+      'landing.footerMission': 'Our mission: make comparative global history accessible to every student, teacher, and curious reader — free, forever.',
+      'landing.footerNavigate': 'Navigate',
+      'landing.footerEducators': 'For Educators',
+      'landing.footerExplore': 'Explore a year',
+      'landing.footerExample': 'See an example',
+      'landing.footerClassroom': 'Classroom use cases',
+      'landing.footerPrint': 'Print as handout',
+      'landing.footerGithub': 'GitHub — fork it ↗',
+      'landing.footerApiKey': 'Get an API Key ↗',
+      'landing.footerCopyright': '© 2026 HistoryLens',
+      'landing.footerLicense': 'MIT License',
+      'landing.footerDisclaimer': 'Built for exploration, not as a primary source. Based on widely accepted historical records. Always verify with textbooks and primary sources.',
+      'landing.printCredit': 'Generated by HistoryLens · Verify with primary sources · historylens.app',
       'search.yearMode': 'Year',
       'search.periodMode': 'Period',
       'search.yearLabel': 'Enter a year to explore',
@@ -148,6 +219,77 @@
       'hero.yearsCovered': 'Лет охвачено',
       'hero.worldRegions': 'Мировых региона',
       'hero.always': 'Всегда',
+      'landing.exampleLabel': 'Пример результата — 1453 год',
+      'landing.exampleEra': 'Эпоха столкновения империй',
+      'landing.exampleHookHtml': 'Пока <strong>Османская империя</strong> уничтожала последний остаток <strong>Рима</strong>, взяв Константинополь, <strong>Китай эпохи Мин</strong> уже отступил от глобальной морской экспансии — а <strong>Америки</strong> оставались вне поля зрения обеих сторон.',
+      'landing.exampleRegionEurope': 'Европа',
+      'landing.exampleRegionAsia': 'Азия',
+      'landing.exampleRegionAmericas': 'Америки',
+      'landing.exampleRegionAfrica': 'Африка',
+      'landing.exampleThesisEurope': '"Тысячелетняя империя исчезла после одной осады"',
+      'landing.exampleThesisAsia': '"Османская экспансия меняет известный мир"',
+      'landing.exampleThesisAmericas': '"Цивилизации на подъеме — еще не знающие о грядущем ударе"',
+      'landing.exampleThesisAfrica': '"Сонгай затмевает Мали как ведущая сила континента"',
+      'landing.exampleEventEurope': '⭐ Падение Константинополя завершает византийскую эпоху и направляет европейскую торговлю на запад',
+      'landing.exampleEventAsia': '⭐ Завоевание Мехмеда II закрепляет османское господство над восточными средиземноморскими торговыми путями',
+      'landing.exampleEventAmericas': '⭐ Тройственный союз ацтеков укрепляет центральную Мексику за 40 лет до контакта с Европой',
+      'landing.exampleEventAfrica': '⭐ Расширение Сонгая при сунни Али ускоряет консолидацию торговли в Западной Африке',
+      'landing.exampleContrastHtml': '<strong>Глобальный контраст —</strong> падение Константинополя подталкивало европейских купцов искать атлантические пути, тогда как западноафриканские и мезоамериканские державы действовали на пике возможностей — почти не связанные со средиземноморским кризисом, который менял Евразию.',
+      'landing.exampleCta': '→ Запустить этот год',
+      'landing.howLabel': 'Как это работает',
+      'landing.how.0.title': 'Выделяет ключевые мировые события',
+      'landing.how.0.desc': 'Находит наиболее значимые исторические процессы в каждом регионе для выбранного года.',
+      'landing.how.1.title': 'Ранжирует по историческому влиянию',
+      'landing.how.1.desc': 'Одно главное событие на регион и два дополнительных. Иерархия отражает последствия, а не свежесть события.',
+      'landing.how.2.title': 'Сравнивает регионы',
+      'landing.how.2.desc': 'Регионы показаны рядом, чтобы выявить одновременные закономерности, контрасты и слепые зоны.',
+      'landing.how.3.title': 'Создает глобальный анализ',
+      'landing.how.3.desc': 'Структурированный межрегиональный контраст показывает связи между событиями, происходившими одновременно.',
+      'landing.whoLabel': 'Для кого это',
+      'landing.who.0.who': 'Студенты',
+      'landing.who.0.title': 'Понимать контекст, а не заучивать факты',
+      'landing.who.0.bullet.0': 'Помещать события в мировой контекст',
+      'landing.who.0.bullet.1': 'Замечать закономерности между цивилизациями',
+      'landing.who.0.bullet.2': 'Строить аргументы, а не только хронологии',
+      'landing.who.1.who': 'Учителя и преподаватели',
+      'landing.who.1.title': 'Объяснять глобальную динамику без долгой подготовки',
+      'landing.who.1.bullet.0': 'Мгновенные межрегиональные сравнения',
+      'landing.who.1.bullet.1': 'Структурированный материал для печати',
+      'landing.who.1.bullet.2': 'Подходит к любой учебной программе',
+      'landing.who.2.who': 'Любознательные читатели',
+      'landing.who.2.title': 'Исследовать историю такой, какой она происходила',
+      'landing.who.2.bullet.0': 'Следовать выбранным историческим линиям',
+      'landing.who.2.bullet.1': 'Сравнивать любые два года рядом',
+      'landing.who.2.bullet.2': 'Собирать собственную линию исследования',
+      'landing.trust.0': 'Бесплатно — без аккаунта',
+      'landing.trust.1': 'Основано на признанных исторических данных',
+      'landing.trust.2': 'Создано для исследования, не как первоисточник',
+      'landing.trust.3': 'Открытый исходный код · лицензия MIT',
+      'landing.trustDisclaimer': 'Всегда проверяйте важные утверждения по учебникам, энциклопедиям и первичным источникам. Ключевые события и проверки хронологии содержат ссылки; интерпретацию сверяйте со специальной литературой.',
+      'landing.threadsLabel': 'Подборки тем',
+      'landing.manifestoEyebrow': 'Что это показывает',
+      'landing.manifestoHeadingHtml': 'История — не последовательность событий.<br/>Это набор одновременных условий.',
+      'landing.manifesto.0': 'Обычно историю преподают по одному региону за раз — одна империя, одна война, один век. В итоге прошлое складывается из <strong>изолированных рассказов</strong>, которые почти не пересекаются. Учащиеся узнают, что происходило в Европе во время Возрождения или в Китае при Мин, но редко видят оба мира одновременно.',
+      'landing.manifesto.1': 'Это важно, потому что <strong>закономерности, сформировавшие современный мир, становятся видимыми только при сравнении.</strong> Османская экспансия меняла торговые пути Европы. Одновременно рушились несколько империй в 1918 году. Черная смерть двигалась через Азию, Ближний Восток и Европу как единая катастрофа взаимосвязанного мира.',
+      'landing.manifesto.2': 'HistoryLens строится на простой идее: <strong>если поставить регионы рядом, становится видно то, чего не показывает одна линия времени.</strong> Когда видно, что Колумб достиг Америки в ту же эпоху, когда Османская империя укрепляла контроль над восточным Средиземноморьем, 1492 год перестает быть только "открытием" и становится следствием перенаправленной европейской амбиции.',
+      'landing.manifesto.3': 'Такое понимание контекста нельзя построить из одних фактов. Нужны <strong>сравнение, контраст и готовность смотреть на весь мир одновременно.</strong> Это не замена первичным источникам или научным исследованиям, а структурированная отправная точка для глобального мышления о любом историческом моменте.',
+      'landing.manifestoPull.0': '<strong>Мировые регионы рядом</strong>Европа, Азия, Америки и Африка — при каждом поиске.',
+      'landing.manifestoPull.1': '<strong>Лет одновременной истории</strong>От древней Месопотамии до начала XXI века.',
+      'landing.manifestoPull.2': '<strong>Главный вопрос каждого поиска</strong>"Что еще происходило — повсюду — именно в этот момент?"',
+      'landing.footerDesc': 'Поймите, как выглядел мир в любой год. Сравнивайте регионы, находите закономерности и понимайте глобальные сдвиги, а не только отдельные события.',
+      'landing.footerMission': 'Наша миссия: сделать сравнительную глобальную историю доступной каждому студенту, учителю и любознательному читателю — бесплатно и навсегда.',
+      'landing.footerNavigate': 'Навигация',
+      'landing.footerEducators': 'Для преподавателей',
+      'landing.footerExplore': 'Исследовать год',
+      'landing.footerExample': 'Посмотреть пример',
+      'landing.footerClassroom': 'Идеи для уроков',
+      'landing.footerPrint': 'Печать как раздатка',
+      'landing.footerGithub': 'GitHub — сделать форк ↗',
+      'landing.footerApiKey': 'Получить API-ключ ↗',
+      'landing.footerCopyright': '© 2026 HistoryLens',
+      'landing.footerLicense': 'Лицензия MIT',
+      'landing.footerDisclaimer': 'Создано для исследования, не как первоисточник. Основано на признанных исторических данных. Всегда сверяйте с учебниками и первичными источниками.',
+      'landing.printCredit': 'Создано HistoryLens · Проверяйте по первичным источникам · historylens.app',
       'search.yearMode': 'Год',
       'search.periodMode': 'Период',
       'search.yearLabel': 'Введите год для анализа',
@@ -370,6 +512,40 @@
     document.querySelectorAll(selector).forEach(node => { node.setAttribute(attr, t(key)); });
   }
 
+  function replaceTextAfterLeadingChild(node, text) {
+    const leading = node.firstElementChild;
+    if (!leading) {
+      node.textContent = text;
+      return;
+    }
+    Array.from(node.childNodes).forEach(child => {
+      if (child !== leading) node.removeChild(child);
+    });
+    node.appendChild(document.createTextNode(text));
+  }
+
+  function setTextWithLeadingChild(selector, key) {
+    document.querySelectorAll(selector).forEach(node => { replaceTextAfterLeadingChild(node, t(key)); });
+  }
+
+  function setIndexedText(selector, keys) {
+    document.querySelectorAll(selector).forEach((node, index) => {
+      if (keys[index]) node.textContent = t(keys[index]);
+    });
+  }
+
+  function setIndexedHtml(selector, keys) {
+    document.querySelectorAll(selector).forEach((node, index) => {
+      if (keys[index]) node.innerHTML = t(keys[index]);
+    });
+  }
+
+  function setIndexedTextWithLeadingChild(selector, keys) {
+    document.querySelectorAll(selector).forEach((node, index) => {
+      if (keys[index]) replaceTextAfterLeadingChild(node, t(keys[index]));
+    });
+  }
+
   function applyStaticTranslations() {
     document.documentElement.lang = currentLanguage;
     setText('.nav-links a[href="#search"], .mobile-nav a[href="#search"]', 'nav.explore');
@@ -411,6 +587,38 @@
     setText('#fbPos', 'feedback.positive');
     setText('#fbNeg', 'feedback.negative');
     setText('#btnReport', 'feedback.report');
+    setText('#exampleSection .section-label', 'landing.exampleLabel');
+    setText('.example-year-era', 'landing.exampleEra');
+    setHtml('.example-hook', 'landing.exampleHookHtml');
+    setTextWithLeadingChild('.example-region-name.europe', 'landing.exampleRegionEurope');
+    setTextWithLeadingChild('.example-region-name.asia', 'landing.exampleRegionAsia');
+    setTextWithLeadingChild('.example-region-name.namerica', 'landing.exampleRegionAmericas');
+    setTextWithLeadingChild('.example-region-name.africa', 'landing.exampleRegionAfrica');
+    setIndexedText('.example-thesis', ['landing.exampleThesisEurope', 'landing.exampleThesisAsia', 'landing.exampleThesisAmericas', 'landing.exampleThesisAfrica']);
+    setIndexedText('.example-event-line', ['landing.exampleEventEurope', 'landing.exampleEventAsia', 'landing.exampleEventAmericas', 'landing.exampleEventAfrica']);
+    setHtml('.example-contrast', 'landing.exampleContrastHtml');
+    setText('#exampleCta1453', 'landing.exampleCta');
+    setText('#howSection .section-label', 'landing.howLabel');
+    setIndexedText('#howSection .how-step-title', ['landing.how.0.title', 'landing.how.1.title', 'landing.how.2.title', 'landing.how.3.title']);
+    setIndexedText('#howSection .how-step-desc', ['landing.how.0.desc', 'landing.how.1.desc', 'landing.how.2.desc', 'landing.how.3.desc']);
+    setText('#forSection .section-label', 'landing.whoLabel');
+    setIndexedText('#forSection .for-who', ['landing.who.0.who', 'landing.who.1.who', 'landing.who.2.who']);
+    setIndexedText('#forSection .for-title', ['landing.who.0.title', 'landing.who.1.title', 'landing.who.2.title']);
+    setIndexedText('#forSection .for-bullets li', ['landing.who.0.bullet.0', 'landing.who.0.bullet.1', 'landing.who.0.bullet.2', 'landing.who.1.bullet.0', 'landing.who.1.bullet.1', 'landing.who.1.bullet.2', 'landing.who.2.bullet.0', 'landing.who.2.bullet.1', 'landing.who.2.bullet.2']);
+    setIndexedTextWithLeadingChild('.trust-item', ['landing.trust.0', 'landing.trust.1', 'landing.trust.2', 'landing.trust.3']);
+    setText('.trust-disclaimer', 'landing.trustDisclaimer');
+    setText('.threads-section-wrap .section-label', 'landing.threadsLabel');
+    setText('.manifesto-eyebrow', 'landing.manifestoEyebrow');
+    setHtml('.manifesto-heading', 'landing.manifestoHeadingHtml');
+    setIndexedHtml('.manifesto-col p', ['landing.manifesto.0', 'landing.manifesto.1', 'landing.manifesto.2', 'landing.manifesto.3']);
+    setIndexedHtml('.manifesto-pull-claim', ['landing.manifestoPull.0', 'landing.manifestoPull.1', 'landing.manifestoPull.2']);
+    setText('.print-credit', 'landing.printCredit');
+    setText('.footer-desc', 'landing.footerDesc');
+    setText('.footer-mission', 'landing.footerMission');
+    setIndexedText('.footer-col-title', ['landing.footerNavigate', 'landing.footerEducators']);
+    setIndexedText('footer .footer-links a', ['landing.footerExplore', 'landing.footerExample', 'landing.howLabel', 'landing.whoLabel', 'landing.footerClassroom', 'landing.footerPrint', 'landing.footerGithub', 'landing.footerApiKey']);
+    setIndexedText('.footer-meta span:not(.footer-version)', ['landing.footerCopyright', 'landing.footerLicense']);
+    setText('.footer-disclaimer', 'landing.footerDisclaimer');
   }
 
   function regionShortName(id) {
