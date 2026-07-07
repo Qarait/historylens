@@ -259,6 +259,24 @@ test('switches app chrome and API requests to Russian', async ({ page }) => {
   await expect(page.locator('#hookLabel')).toContainText('Мир в этот год');
   await expect(page.locator('.section-title').first()).toContainText('Ключевые события');
 });
+
+test('translates historical map chrome and era-adjusted region labels in Russian', async ({ page }) => {
+  await page.goto('/?lang=ru');
+  await page.locator('#yearInput').fill('-44');
+  await page.locator('#searchBtn').click();
+
+  await expect(page.locator('.historical-map-eyebrow')).toContainText('События в пространстве');
+  await expect(page.locator('.historical-map-title')).toContainText('Историко-географическая карта');
+  await expect(page.locator('.historical-map-guidance')).toContainText('Выберите региональный маркер');
+  await expect(page.locator('.historical-map-controls-label')).toContainText('Слой событий');
+  await expect(page.locator('.historical-map-control')).toHaveText(['Главное', 'Дополнительно 1']);
+  await expect(page.locator('.historical-map-navigator-label')).toContainText('Регионы');
+  await expect(page.locator('.historical-map-region-chip').first()).toContainText('Средиземноморье и Европа');
+  await expect(page.locator('.historical-map-detail-position')).toContainText('Регион 1 из 5');
+  await expect(page.locator('.historical-map-detail-region')).toContainText('Средиземноморье и Европа');
+  await expect(page.locator('.region-name').first()).toContainText('Средиземноморье и Европа');
+  await expect(page.locator('#regionProfileNote')).toContainText('Регионы древнего мира');
+});
 test('explores a year and shows cited key events', async ({ page }) => {
   await page.goto('/');
   await page.locator('#yearInput').fill('2020');
