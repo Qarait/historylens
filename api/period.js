@@ -7,6 +7,7 @@ import {
   ANTHROPIC_URL,
   MAX_PERIOD_YEARS,
   MODEL,
+  localizedMaxTokens,
   normalizeLanguage,
   PERIOD_MAX_TOKENS,
   historicalYearDistance,
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
             language
           ),
         }],
-        max_tokens: PERIOD_MAX_TOKENS,
+        max_tokens: localizedMaxTokens(PERIOD_MAX_TOKENS, language),
         temperature: 0,
       }),
     });

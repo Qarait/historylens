@@ -7,6 +7,7 @@ import {
   ANTHROPIC_URL,
   HISTORY_MAX_TOKENS,
   MODEL,
+  localizedMaxTokens,
   normalizeLanguage,
   parseHistoricalYear,
 } from './_lib/config.js';
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
           role: 'user',
           content: buildHistoryPrompt(year, groundingContext, regionProfile, language),
         }],
-        max_tokens: HISTORY_MAX_TOKENS,
+        max_tokens: localizedMaxTokens(HISTORY_MAX_TOKENS, language),
         temperature: 0,
         stream,
       }),

@@ -11,7 +11,7 @@ const { default: checkEventHandler } = await import('../api/check-event.js');
 const { enforceRateLimit } = await import('../api/_lib/request.js');
 const { getRegionProfile } = await import('../api/_lib/region-profiles.js');
 const { sampleHistoricalYears } = await import('../api/_lib/wikipedia.js');
-const { normalizeLanguage } = await import('../api/_lib/config.js');
+const { localizedMaxTokens, normalizeLanguage } = await import('../api/_lib/config.js');
 const {
   buildHistoryPrompt,
   buildKeyEventsPrompt,
@@ -173,6 +173,8 @@ test('history endpoint owns prompt and model settings', async () => {
 });
 
 test('language normalization only allows supported app languages', () => {
+  assert.equal(localizedMaxTokens(100, 'en'), 100);
+  assert.equal(localizedMaxTokens(100, 'ru'), 160);
   assert.equal(normalizeLanguage('ru'), 'ru');
   assert.equal(normalizeLanguage('RU'), 'ru');
   assert.equal(normalizeLanguage('ru-RU'), 'ru');
@@ -192,6 +194,8 @@ test('prompts can request natural Russian while preserving schema keys', () => {
   assert.match(periodPrompt, /natural Russian/i);
   assert.match(eventsPrompt, /natural Russian/i);
   assert.match(eventsPrompt, /category.*requested language/i);
+  assert.match(historyPrompt, /Never wrap JSON in markdown or code fences/i);
+  assert.match(historyPrompt, /Keep Russian responses concise/i);
 });
 
 test('history endpoint forwards Russian language into the owned prompt', async () => {
@@ -202,6 +206,7 @@ test('history endpoint forwards Russian language into the owned prompt', async (
     const forwarded = JSON.parse(options.body);
     assert.match(forwarded.messages[0].content, /natural Russian/i);
     assert.match(forwarded.messages[0].content, /Year: 2021 CE/);
+    assert.ok(forwarded.max_tokens > 2800);
     return jsonResponse({ content: [{ text: '{}' }] });
   };
 

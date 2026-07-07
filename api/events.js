@@ -7,6 +7,7 @@ import {
   ANTHROPIC_URL,
   EVENTS_MAX_TOKENS,
   MODEL,
+  localizedMaxTokens,
   normalizeLanguage,
   parseHistoricalYear,
 } from './_lib/config.js';
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: EVENTS_MAX_TOKENS,
+        max_tokens: localizedMaxTokens(EVENTS_MAX_TOKENS, language),
         temperature: 0,
         messages: [{ role: 'user', content: buildKeyEventsPrompt(year, grounding, language) }],
       }),

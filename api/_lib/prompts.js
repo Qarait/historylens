@@ -216,12 +216,16 @@ function buildLanguageInstructions(language) {
   if (normalized === 'ru') {
     return `LANGUAGE RULES:
 - Write all user-facing JSON string values in natural Russian.
+- Translate era_description, hook_moment, global_context, contrast, states, headlines, arguments, event descriptions, and significance into Russian.
 - Keep JSON keys, region IDs, rank values, and global_signals values exactly as specified in English.
 - Keep source_title values exactly as shown in the grounding chronology.
 - Proper nouns and source titles may remain in their established original form when translation would be awkward.
+- Never wrap JSON in markdown or code fences. Begin with { and end with }.
+- Keep Russian responses concise: no long subordinate chains; event descriptions should be one short sentence.
 - Do not mix English UI labels into Russian prose.`;
   }
   return `LANGUAGE RULES:
 - Write all user-facing JSON string values in natural English.
-- Keep JSON keys, region IDs, rank values, and global_signals values exactly as specified.`;
+- Keep JSON keys, region IDs, rank values, and global_signals values exactly as specified.
+- Never wrap JSON in markdown or code fences. Begin with { and end with }.`;
 }
