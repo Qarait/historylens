@@ -216,10 +216,10 @@ function buildLanguageInstructions(language) {
   if (normalized === 'ru') {
     return `LANGUAGE RULES:
 - Write all user-facing JSON string values in natural Russian.
-- Translate era_description, hook_moment, global_context, contrast, states, headlines, arguments, event descriptions, and significance into Russian.
+- Translate era_description, hook_moment, global_context, contrast, states, headlines, arguments, event titles, event descriptions, period phase stages/headlines/descriptions, category labels, selection notes, and significance into Russian.
 - Keep JSON keys, region IDs, rank values, and global_signals values exactly as specified in English.
-- Keep source_title values exactly as shown in the grounding chronology.
-- Proper nouns and source titles may remain in their established original form when translation would be awkward.
+- Keep source_title values exactly as shown in the grounding chronology; source_title is the only user-facing value that may stay English for citation matching.
+- Proper nouns may remain in established original or transliterated form when translation would be awkward, but surrounding event-title words must be Russian.
 - Never wrap JSON in markdown or code fences. Begin with { and end with }.
 - Keep Russian responses compact enough to finish completely: hook_moment max 1 sentence; global_context max 2 short sentences; each event description max 14 words; thesis_argument and significance max 18 words.
 - Prefer compact Russian wording over literary style. Do not add extra explanation, examples, or fields.

@@ -23,6 +23,7 @@ const currentLanguage = () => I18N?.getLanguage?.() || 'en';
 const languageSuffix = () => I18N?.languageSearchParam?.() || '';
 const yearCacheKey = year => `${currentLanguage()}:${year}`;
 const periodCacheKey = (startYear, endYear) => `${currentLanguage()}:${startYear}:${endYear}`;
+const localizedRegionProfile = profile => I18N?.localizedRegionProfile?.(profile) || profile;
 
 /* ── CONFIG ─────────────────────────────────────────────────────────────── */
 const CONFIG = {
@@ -601,7 +602,7 @@ async function exploreSingle(year) {
   try {
     await HistoryLensApi.fetchHistoryStream(year, {
       onRegionProfile: (profile) => {
-        activeRegionProfile = profile;
+        activeRegionProfile = localizedRegionProfile(profile);
         accumulatedData.__regionProfile = profile;
       },
       onGrounding: (grounding) => {
@@ -869,11 +870,11 @@ function handleFetchError(err) {
 
 /* ── RENDER — SINGLE YEAR ────────────────────────────────────────────────── */
 function renderSingle(year, data) {
-  const profile = data.__regionProfile || {
+  const profile = localizedRegionProfile(data.__regionProfile || {
     id: 'modern',
     label: 'Modern continental regions',
     regions: DEFAULT_REGIONS,
-  };
+  });
   activeRegionProfile = profile;
   document.getElementById('periodArc').classList.remove('visible');
   document.getElementById('hookLabel').textContent = t('results.worldThisYear');
@@ -904,7 +905,7 @@ function renderSingle(year, data) {
   grid.className = 'regions-grid';
   for (const region of profile.regions) {
     const regionData = data.regions?.[region.id];
-    if (regionData) grid.appendChild(buildCard(region, regionData));
+    if (regionData) grid.appendChild(buildCard(region, regionData, { profile }));
   }
   output.appendChild(grid);
 
@@ -947,11 +948,11 @@ function renderSingle(year, data) {
 
 /* ── RENDER — COMPARE ────────────────────────────────────────────────────── */
 function renderPeriod(startYear, endYear, data) {
-  const profile = data.__regionProfile || {
+  const profile = localizedRegionProfile(data.__regionProfile || {
     id: 'modern',
     label: 'Modern continental regions',
     regions: DEFAULT_REGIONS,
-  };
+  });
   activeRegionProfile = profile;
   document.getElementById('resultsYear').textContent = formatPeriod(startYear, endYear);
   document.getElementById('resultsEra').textContent = data.era_description || '';
@@ -977,7 +978,7 @@ function renderPeriod(startYear, endYear, data) {
   grid.className = 'regions-grid';
   for (const region of profile.regions) {
     const regionData = data.regions?.[region.id];
-    if (regionData) grid.appendChild(buildCard(region, regionData, { period: true }));
+    if (regionData) grid.appendChild(buildCard(region, regionData, { period: true, profile }));
   }
   output.appendChild(grid);
 
@@ -1064,11 +1065,11 @@ function renderCompare(year1, data1, year2, data2) {
   const mapViews = [];
   const teacherViews = [];
   for (const { year, data } of [{ year: year1, data: data1 }, { year: year2, data: data2 }]) {
-    const profile = data.__regionProfile || {
+    const profile = localizedRegionProfile(data.__regionProfile || {
       id: 'modern',
       label: 'Modern continental regions',
       regions: DEFAULT_REGIONS,
-    };
+    });
     const block = document.createElement('div');
     block.className = 'compare-block';
     block.dataset.mapLabel = String(year);
@@ -1087,7 +1088,7 @@ function renderCompare(year1, data1, year2, data2) {
     grid.className = 'regions-grid compare-regions-grid';
     for (const region of profile.regions) {
       const regionData = data.regions?.[region.id];
-      if (regionData) grid.appendChild(buildCard(region, regionData));
+      if (regionData) grid.appendChild(buildCard(region, regionData, { profile }));
     }
     block.appendChild(grid);
     wrapper.appendChild(block);
@@ -1179,6 +1180,14 @@ function renderPerspectiveMode(mode, views) {
   );
 }
 
+function displayRegionLabel(region, profile) {
+  return I18N?.localizedRegionLabel?.(region, profile) || region.label;
+}
+
+function displayRegionSub(region, profile) {
+  return I18N?.localizedRegionSub?.(region, profile) || region.sub;
+}
+
 function renderRegionProfileNote(profile) {
   const note = document.getElementById('regionProfileNote');
   if (!profile || profile.id === 'modern') {
@@ -1201,6 +1210,9 @@ function buildCard(region, rd, options = {}) {
   card.dataset.region = region.id;
   card.style.setProperty('--region-color', region.color || '#c9a84c');
   card.style.setProperty('--region-dim', colorWithAlpha(region.color || '#c9a84c', 0.15));
+  const profileForDisplay = options.profile || activeRegionProfile;
+  const regionLabel = displayRegionLabel(region, profileForDisplay);
+  const regionSub = displayRegionSub(region, profileForDisplay);
 
   // Header
   const header = document.createElement('div');
@@ -1208,8 +1220,8 @@ function buildCard(region, rd, options = {}) {
   header.innerHTML = `
     <div class="region-icon-wrap${region.icon.length <= 2 ? ' is-monogram' : ''}" aria-hidden="true">${esc(region.icon)}</div>
     <div>
-      <div class="region-name">${esc(region.label)}</div>
-      <div class="region-sub">${esc(region.sub)}</div>
+      <div class="region-name">${esc(regionLabel)}</div>
+      <div class="region-sub">${esc(regionSub)}</div>
     </div>`;
   card.appendChild(header);
 

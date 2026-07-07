@@ -2,6 +2,9 @@
   'use strict';
 
   const NS = 'http://www.w3.org/2000/svg';
+  const I18N = global.HistoryLensI18n;
+  const t = (key, params) => I18N?.t?.(key, params) || key;
+  const localizedRegionProfile = profile => I18N?.localizedRegionProfile?.(profile) || profile;
   const POSITIONS = {
     europe: { x: 515, y: 165, dx: -8, dy: -42 },
     asia: { x: 715, y: 220, dx: 12, dy: -45 },
@@ -40,7 +43,8 @@
     for (const view of views) container.appendChild(buildPanel(view));
   }
 
-  function buildPanel(view) {
+  function buildPanel(rawView) {
+    const view = { ...rawView, profile: localizedRegionProfile(rawView.profile) };
     const panel = document.createElement('section');
     panel.className = 'historical-map-panel';
     panel.dataset.mapLabel = view.label;
@@ -50,20 +54,20 @@
     const heading = document.createElement('div');
     const eyebrow = document.createElement('div');
     eyebrow.className = 'historical-map-eyebrow';
-    eyebrow.textContent = view.period ? 'Change Across Space' : 'Events Across Space';
+    eyebrow.textContent = view.period ? t('map.changeAcrossSpace') : t('map.eventsAcrossSpace');
     const title = document.createElement('h2');
     title.className = 'historical-map-title';
-    title.textContent = view.compare ? `${view.label} explorer` : 'Historical geography explorer';
+    title.textContent = view.compare ? t('map.compareExplorer', { label: view.label }) : t('map.geographyExplorer');
     const guidance = document.createElement('p');
     guidance.className = 'historical-map-guidance';
-    guidance.textContent = 'Select a region marker or a relationship arc to investigate the year spatially.';
+    guidance.textContent = view.period ? t('map.guidance.period') : t('map.guidance.year');
     heading.append(eyebrow, title, guidance);
 
     const controlsWrap = document.createElement('div');
     controlsWrap.className = 'historical-map-controls-wrap';
     const controlsLabel = document.createElement('span');
     controlsLabel.className = 'historical-map-controls-label';
-    controlsLabel.textContent = view.period ? 'Turning-point layer' : 'Event layer';
+    controlsLabel.textContent = view.period ? t('map.turningPointLayer') : t('map.eventLayer');
     const controls = document.createElement('div');
     controls.className = 'historical-map-controls';
     controls.setAttribute('aria-label', controlsLabel.textContent);
@@ -89,9 +93,9 @@
     const legend = document.createElement('div');
     legend.className = 'historical-map-legend';
     legend.append(
-      legendItem('historical-map-legend-marker', 'Numbered markers are regional events'),
-      legendItem('historical-map-legend-link', 'Arcs reveal cross-region relationships'),
-      legendItem('historical-map-legend-map', 'Geography is contextual, not a border reconstruction')
+      legendItem('historical-map-legend-marker', t('map.legend.markers')),
+      legendItem('historical-map-legend-link', t('map.legend.arcs')),
+      legendItem('historical-map-legend-map', t('map.legend.geography'))
     );
     panel.appendChild(legend);
 
@@ -103,14 +107,14 @@
     };
     const maxEvents = Math.max(1, ...mapped.map(item => item.data.events?.length || 0));
     const labels = view.period
-      ? ['Defining shift', 'Supporting shift']
-      : ['Primary', 'Supporting 1', 'Supporting 2'];
+      ? [t('map.definingShift'), t('map.supportingShift')]
+      : [t('map.primary'), t('map.supporting', { index: 1 }), t('map.supporting', { index: 2 })];
 
     for (let index = 0; index < maxEvents; index++) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = `historical-map-control${index === 0 ? ' active' : ''}`;
-      button.textContent = labels[index] || `Event ${index + 1}`;
+      button.textContent = labels[index] || t('map.event', { index: index + 1 });
       button.setAttribute('aria-pressed', String(index === 0));
       button.addEventListener('click', () => {
         state.eventIndex = index;
@@ -139,7 +143,7 @@
     const svg = svgElement('svg', {
       viewBox: '0 0 1000 480',
       role: 'img',
-      'aria-label': `${view.label} interactive historical geography map`,
+      'aria-label': t('map.aria', { label: view.label }),
     });
     svg.classList.add('historical-map-svg');
     drawBaseMap(svg);
@@ -154,7 +158,7 @@
         class: `historical-map-node${active ? ' active' : ''}`,
         role: 'button',
         tabindex: '0',
-        'aria-label': `${item.region.label}: ${event?.title || 'Regional analysis'}`,
+        'aria-label': `${item.region.label}: ${event?.title || t('map.regionalAnalysis')}`,
         transform: `translate(${position.x} ${position.y})`,
       });
       const pulse = svgElement('circle', {
@@ -242,7 +246,7 @@
         class: `historical-map-connection${state.selectedTensionIndex === index ? ' active' : ''}`,
         role: 'button',
         tabindex: '0',
-        'aria-label': `Relationship: ${regionLabel(view, fromId)} and ${regionLabel(view, toId)}`,
+        'aria-label': t('map.relationshipAria', { from: regionLabel(view, fromId), to: regionLabel(view, toId) }),
       });
       const hitArea = svgElement('path', {
         d: curvedPath(from, to),
@@ -282,7 +286,7 @@
     container.innerHTML = '';
     const intro = document.createElement('span');
     intro.className = 'historical-map-navigator-label';
-    intro.textContent = 'Explore regions';
+    intro.textContent = t('map.exploreRegions');
     container.appendChild(intro);
 
     mapped.forEach((item, index) => {
@@ -321,23 +325,23 @@
     );
     const item = mapped[itemIndex];
     if (!item) {
-      detail.textContent = 'Map data will appear as regional analysis completes.';
+      detail.textContent = t('map.pending');
       return;
     }
     const event = selectedEvent(item, state.eventIndex);
     const position = document.createElement('div');
     position.className = 'historical-map-detail-position';
-    position.textContent = `Region ${itemIndex + 1} of ${mapped.length}`;
+    position.textContent = t('map.regionPosition', { index: itemIndex + 1, total: mapped.length });
     const region = document.createElement('div');
     region.className = 'historical-map-detail-region';
     region.style.color = item.region.color;
     region.textContent = item.region.label;
     const stateBadge = document.createElement('div');
     stateBadge.className = 'historical-map-detail-state';
-    stateBadge.textContent = item.data.state || 'Regional context';
+    stateBadge.textContent = item.data.state || t('map.regionalContext');
     const title = document.createElement('h3');
     title.className = 'historical-map-detail-title';
-    title.textContent = event?.title || item.data.thesis_headline || 'Regional analysis';
+    title.textContent = event?.title || item.data.thesis_headline || t('map.regionalAnalysis');
     const meta = document.createElement('div');
     meta.className = 'historical-map-detail-meta';
     meta.textContent = event?.year || '';
@@ -345,12 +349,12 @@
     description.className = 'historical-map-detail-description';
     description.textContent = event?.description || item.data.thesis_argument || '';
     const insight = detailInsight(
-      'Regional pattern',
+      t('map.regionalPattern'),
       item.data.thesis_headline,
       item.data.thesis_argument
     );
     const significance = detailInsight(
-      'Why it matters',
+      t('map.whyItMatters'),
       '',
       item.data.significance
     );
@@ -370,18 +374,18 @@
     const toLabel = regionLabel(view, toId);
     const position = document.createElement('div');
     position.className = 'historical-map-detail-position';
-    position.textContent = `Relationship ${state.selectedTensionIndex + 1} of ${tensions.length}`;
+    position.textContent = t('map.relationshipPosition', { index: state.selectedTensionIndex + 1, total: tensions.length });
     const region = document.createElement('div');
     region.className = 'historical-map-detail-region is-relationship';
-    region.textContent = 'Cross-region connection';
+    region.textContent = t('map.crossRegionConnection');
     const title = document.createElement('h3');
     title.className = 'historical-map-detail-title';
     title.textContent = `${fromLabel} ↔ ${toLabel}`;
     const description = document.createElement('p');
     description.className = 'historical-map-detail-description is-relationship';
-    description.textContent = tension.note || 'These regions were linked by the wider historical system.';
+    description.textContent = tension.note || t('map.relationshipFallback');
     const contrast = detailInsight(
-      'Wider pattern',
+      t('map.relationshipPattern'),
       '',
       view.data.cross_region?.contrast
     );
@@ -392,15 +396,15 @@
   function buildDetailActions(item, mapped, itemIndex, state, redraw) {
     const actions = document.createElement('div');
     actions.className = 'historical-map-detail-actions';
-    const previous = detailButton('← Previous', itemIndex === 0, () => {
+    const previous = detailButton(t('map.previous'), itemIndex === 0, () => {
       state.selectedRegionId = mapped[itemIndex - 1].region.id;
       redraw();
     });
-    const next = detailButton('Next →', itemIndex === mapped.length - 1, () => {
+    const next = detailButton(t('map.next'), itemIndex === mapped.length - 1, () => {
       state.selectedRegionId = mapped[itemIndex + 1].region.id;
       redraw();
     });
-    const open = detailButton('Open full regional analysis', false, () => {
+    const open = detailButton(t('map.openRegionalAnalysis'), false, () => {
       const selector = `${item.cardSelector} .region-card[data-region="${item.region.id}"]`.trim();
       const card = document.querySelector(selector);
       card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -501,7 +505,9 @@
       .replace('West, Central & South Asia', 'West & South Asia')
       .replace('Middle East & South Asia', 'Middle & South Asia')
       .replace('Europe & Mediterranean', 'Europe & Med.')
-      .replace('Mediterranean & Europe', 'Mediterranean');
+      .replace('Mediterranean & Europe', 'Mediterranean')
+      .replace('Европа и Средиземноморье', 'Европа и Средиз.')
+      .replace('Средиземноморье и Европа', 'Средиземноморье');
   }
 
   function curvedPath(from, to) {
