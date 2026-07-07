@@ -14,6 +14,10 @@ export function normalizeLanguage(value) {
   return SUPPORTED_LANGUAGES.has(base) ? base : 'en';
 }
 
+export function localizedMaxTokens(baseTokens, language) {
+  return normalizeLanguage(language) === 'ru' ? Math.ceil(baseTokens * 1.6) : baseTokens;
+}
+
 export function parseHistoricalYear(value) {
   const year = Number.parseInt(value, 10);
   if (!Number.isInteger(year) || year < MIN_YEAR || year > MAX_YEAR || year === 0) {
