@@ -15,6 +15,10 @@
 
 const I18N = window.HistoryLensI18n;
 const t = (key, params) => I18N?.t?.(key, params) || key;
+const localizedText = (key, fallback) => {
+  const value = t(key);
+  return value === key ? fallback : value;
+};
 const currentLanguage = () => I18N?.getLanguage?.() || 'en';
 const languageSuffix = () => I18N?.languageSearchParam?.() || '';
 const yearCacheKey = year => `${currentLanguage()}:${year}`;
@@ -432,20 +436,36 @@ function surpriseMe() {
 }
 
 /* ── LANDING HOOK ────────────────────────────────────────────────────────── */
+function hookRegionName(regionId) {
+  const fallback = regionId === 'namerica' ? 'Americas' : regionId.charAt(0).toUpperCase() + regionId.slice(1);
+  return localizedText(`landingHook.region.${regionId}`, fallback);
+}
+
+function hookRegionState(index, region) {
+  return localizedText(`landingHook.${index}.region.${region.id}`, region.state);
+}
+
+function threadName(index, thread) {
+  return localizedText(`thread.${index}.name`, thread.name);
+}
+
+function threadDescription(index, thread) {
+  return localizedText(`thread.${index}.desc`, thread.desc);
+}
 function renderLandingHook(index) {
   const ex = HOOK_EXAMPLES[index];
 
   // Safe: textContent for plain text fields
   document.getElementById('lhYear').textContent = ex.label;
-  document.getElementById('lhEra').textContent  = ex.era;
+  document.getElementById('lhEra').textContent  = localizedText(`landingHook.${index}.era`, ex.era);
 
   // contrast is static author HTML (only <strong> tags with hardcoded names)
-  document.getElementById('lhContrast').innerHTML = ex.contrast;
+  document.getElementById('lhContrast').innerHTML = localizedText(`landingHook.${index}.contrastHtml`, ex.contrast);
 
   // Metric
   const metricEl = document.getElementById('lhMetric');
   metricEl.className = `lh-metric ${ex.metric.cls}`;
-  document.getElementById('lhMetricText').textContent = ex.metric.label;
+  document.getElementById('lhMetricText').textContent = localizedText(`landingHook.${index}.metric`, ex.metric.label);
 
   // Region chips — built safely with textContent
   const regionsEl = document.getElementById('lhRegions');
@@ -455,12 +475,12 @@ function renderLandingHook(index) {
     chip.className = `lh-region-chip ${r.id}`;
 
     const name  = document.createElement('span');
-    name.textContent = r.id === 'namerica' ? 'Americas' : r.id.charAt(0).toUpperCase() + r.id.slice(1);
+    name.textContent = hookRegionName(r.id);
     chip.appendChild(name);
 
     const state = document.createElement('span');
     state.className   = 'lh-region-state';
-    state.textContent = ` — ${r.state}`;
+    state.textContent = ` — ${hookRegionState(index, r)}`;
     chip.appendChild(state);
 
     regionsEl.appendChild(chip);
@@ -1436,11 +1456,11 @@ function renderThreads() {
 
     const name = document.createElement('div');
     name.className = 'thread-name';
-    name.textContent = thread.name;
+    name.textContent = threadName(threadIndex, thread);
 
     const desc = document.createElement('div');
     desc.className = 'thread-desc';
-    desc.textContent = thread.desc;
+    desc.textContent = threadDescription(threadIndex, thread);
 
     const years = document.createElement('div');
     years.className = 'thread-years';
@@ -1463,7 +1483,7 @@ function startThread(index) {
   const thread = THREADS[index];
   if (!thread) return;
   setYear(thread.years[0]);
-  showToast(`📖 ${thread.name} — starting at ${formatYear(thread.years[0])}`);
+  showToast(t('toast.threadStart', { name: threadName(index, thread), year: formatYear(thread.years[0]) }));
 }
 
 /* ── TIMELINE MEMORY ─────────────────────────────────────────────────────── */

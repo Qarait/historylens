@@ -246,6 +246,13 @@ test('switches app chrome and API requests to Russian', async ({ page }) => {
   await expect(page.locator(".manifesto-eyebrow")).toContainText("Что это показывает");
   await expect(page.locator(".manifesto-heading")).toContainText("История — не последовательность событий");
   await expect(page.locator(".footer-desc")).toContainText("Поймите, как выглядел мир");
+  await page.locator('.lh-dot').nth(2).click();
+  await expect(page.locator('#lhEra')).toContainText('Эпоха революций');
+  await expect(page.locator('#lhMetricText')).toContainText('Политическая раздробленность');
+  await expect(page.locator('#lhContrast')).toContainText('Латинская Америка');
+  await expect(page.locator('.lh-region-chip').first()).toContainText('Европа');
+  await expect(page.locator('.lh-region-chip').first()).toContainText('Постнаполеоновская нестабильность');
+  await expect(page.locator('.thread-name').first()).toContainText('Возвышение империй');
 
   await page.locator('#yearInput').fill('1885');
   await page.locator('#searchBtn').click();
