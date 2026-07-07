@@ -174,7 +174,7 @@ test('history endpoint owns prompt and model settings', async () => {
 
 test('language normalization only allows supported app languages', () => {
   assert.equal(localizedMaxTokens(100, 'en'), 100);
-  assert.equal(localizedMaxTokens(100, 'ru'), 160);
+  assert.equal(localizedMaxTokens(100, 'ru'), 280);
   assert.equal(normalizeLanguage('ru'), 'ru');
   assert.equal(normalizeLanguage('RU'), 'ru');
   assert.equal(normalizeLanguage('ru-RU'), 'ru');
@@ -195,7 +195,7 @@ test('prompts can request natural Russian while preserving schema keys', () => {
   assert.match(eventsPrompt, /natural Russian/i);
   assert.match(eventsPrompt, /category.*requested language/i);
   assert.match(historyPrompt, /Never wrap JSON in markdown or code fences/i);
-  assert.match(historyPrompt, /Keep Russian responses concise/i);
+  assert.match(historyPrompt, /Keep Russian responses compact enough to finish completely/i);
 });
 
 test('history endpoint forwards Russian language into the owned prompt', async () => {

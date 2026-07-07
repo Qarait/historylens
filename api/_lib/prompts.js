@@ -221,7 +221,8 @@ function buildLanguageInstructions(language) {
 - Keep source_title values exactly as shown in the grounding chronology.
 - Proper nouns and source titles may remain in their established original form when translation would be awkward.
 - Never wrap JSON in markdown or code fences. Begin with { and end with }.
-- Keep Russian responses concise: no long subordinate chains; event descriptions should be one short sentence.
+- Keep Russian responses compact enough to finish completely: hook_moment max 1 sentence; global_context max 2 short sentences; each event description max 14 words; thesis_argument and significance max 18 words.
+- Prefer compact Russian wording over literary style. Do not add extra explanation, examples, or fields.
 - Do not mix English UI labels into Russian prose.`;
   }
   return `LANGUAGE RULES:
