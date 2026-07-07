@@ -239,6 +239,13 @@ test('switches app chrome and API requests to Russian', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
   await expect(page.locator('#searchBtn')).toContainText('Исследовать');
   await expect(page.locator('.hero-title')).toContainText('любой год');
+  await expect(page.locator("#howSection .section-label")).toContainText("Как это работает");
+  await expect(page.locator("#howSection .how-step-title").first()).toContainText("ключевые мировые события");
+  await expect(page.locator("#forSection .section-label")).toContainText("Для кого это");
+  await expect(page.locator("#forSection .for-title").first()).toContainText("Понимать контекст");
+  await expect(page.locator(".manifesto-eyebrow")).toContainText("Что это показывает");
+  await expect(page.locator(".manifesto-heading")).toContainText("История — не последовательность событий");
+  await expect(page.locator(".footer-desc")).toContainText("Поймите, как выглядел мир");
 
   await page.locator('#yearInput').fill('1885');
   await page.locator('#searchBtn').click();
