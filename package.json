@@ -32,9 +32,9 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "eslint": "^10.5.0",
-    "html-validate": "^11.5.3",
+    "@playwright/test": "^1.61.1",
+    "eslint": "^10.7.0",
+    "html-validate": "^11.5.6",
     "serve": "^14.2.6"
   }
 }
